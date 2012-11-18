@@ -21,7 +21,11 @@ case class Number[T: WeakTypeTag](n: Int) {
 
 object NumberImpl {
   def addition_impl[T: c.WeakTypeTag](c: Context)
-    (n: c.Expr[Number[T]], that: c.Expr[Number[T]]): c.Expr[Number[T]] = {
+    (n: c.Expr[Number[T]], that: c.Expr[Number[T]]):
+      c.Expr[Number[T]] = {
+
+
+
 
     import c.universe._
 
@@ -42,7 +46,8 @@ object NumberImpl {
   }
 
   def multiplication_impl[T: c.WeakTypeTag, U: c.WeakTypeTag]
-    (c: Context)(n: c.Expr[Number[T]], that: c.Expr[Number[U]]):
+    (c: Context)(n: c.Expr[Number[T]], that: c.Expr[Number[U]])
+    (evidence$2: c.Expr[WeakTypeTag[U]]):
       c.Expr[Any] = {
 
     import c.universe._
