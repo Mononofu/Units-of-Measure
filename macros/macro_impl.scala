@@ -21,11 +21,12 @@ case class Number[T: WeakTypeTag](n: Int) {
 
 object NumberImpl {
   def addition_impl[T: c.WeakTypeTag](c: Context)
-    (n: c.Expr[Number[T]], that: c.Expr[Number[T]]):
-      c.Expr[Number[T]] = {
+    (n: c.Expr[Number[T]], that: c.Expr[Number[T]]) = {
 
+    val tag = c.universe.weakTypeTag[T]
+    val targs = tag.tpe
 
-
+    println(s"$tagq has type arguments $targs")
 
     import c.universe._
 
