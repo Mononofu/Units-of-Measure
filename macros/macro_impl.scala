@@ -20,15 +20,18 @@ case class Number[T: WeakTypeTag](n: Int) {
 }
 
 object NumberImpl {
-  def addition_impl[T: c.WeakTypeTag](c: Context)
-    (n: c.Expr[Number[T]], that: c.Expr[Number[T]]) = {
+  def addition_impl[U: c.WeakTypeTag](c: Context)
+    (that: c.Expr[Number[U]])
+    (evidence$2: c.Expr[WeakTypeTag[U]]) = {
 
-    val tag = c.universe.weakTypeTag[T]
-    val targs = tag.tpe
-
-    println(s"$tagq has type arguments $targs")
+    println(c.prefix)
 
     import c.universe._
+
+    //println(evidence)
+
+    val targs = c.prefix.actualType
+    println(s"\n\ntype of has type arguments $targs\n\n")
 
     val evals = ListBuffer[ValDef]()
     def precompute(value: Tree, tpe: Type): Ident = {
@@ -37,23 +40,23 @@ object NumberImpl {
       Ident(freshName)
     }
 
-    val a = precompute(n.tree, typeOf[Number[_]])
+    val a = precompute(that.tree, typeOf[Number[_]])
     val b = precompute(that.tree, typeOf[Number[_]])
 
-    val stats = reify(Number[T](c.Expr[Number[T]](a).splice.n +
-      c.Expr[Number[T]](b).splice.n)).tree
-    println(showRaw(stats))
-    c.Expr[Number[T]](Block(evals.toList, stats))
+    val stats = reify(Number[U](c.Expr[Number[U]](a).splice.n +
+      c.Expr[Number[U]](b).splice.n)).tree
+    //println(showRaw(stats))
+    c.Expr[Number[U]](Block(evals.toList, stats))
   }
 
   def multiplication_impl[T: c.WeakTypeTag, U: c.WeakTypeTag]
     (c: Context)(n: c.Expr[Number[T]], that: c.Expr[Number[U]])
-    (evidence$2: c.Expr[WeakTypeTag[U]]):
+    (evidence: c.Expr[WeakTypeTag[U]]):
       c.Expr[Any] = {
 
     import c.universe._
 
-    println(that.actualType)
+    //println(that.actualType)
 
     val evals = ListBuffer[ValDef]()
     def precompute(value: Tree, tpe: Type): Ident = {
