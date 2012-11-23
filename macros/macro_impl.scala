@@ -22,16 +22,15 @@ case class Number[T: WeakTypeTag](n: Int) {
 object NumberImpl {
   def addition_impl[U: c.WeakTypeTag](c: Context)
     (that: c.Expr[Number[U]])
-    (evidence$2: c.Expr[WeakTypeTag[U]]) = {
+    (tag: c.Expr[WeakTypeTag[U]]) = {
 
-    println(c.prefix)
+    //println(c.prefix)
 
     import c.universe._
 
-    //println(evidence)
-
     val targs = c.prefix.actualType
-    println(s"\n\ntype of has type arguments $targs\n\n")
+    val targs2 = that.actualType
+    println(s"a: $targs, b: $targs2")
 
     val evals = ListBuffer[ValDef]()
     def precompute(value: Tree, tpe: Type): Ident = {
@@ -51,7 +50,7 @@ object NumberImpl {
 
   def multiplication_impl[T: c.WeakTypeTag, U: c.WeakTypeTag]
     (c: Context)(n: c.Expr[Number[T]], that: c.Expr[Number[U]])
-    (evidence: c.Expr[WeakTypeTag[U]]):
+    (tag: c.Expr[WeakTypeTag[U]]):
       c.Expr[Any] = {
 
     import c.universe._

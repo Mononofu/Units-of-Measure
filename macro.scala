@@ -1,17 +1,17 @@
-import scala.reflect.runtime.universe.WeakTypeTag
+import scala.reflect.runtime.universe.{ WeakTypeTag, Expr }
 
 case class MyNumber[T: WeakTypeTag](val num: Number[T]) {
   //def my_add(n: Number[T], that: Number[T]): Number[T] =
   //  macro NumberImpl.addition_impl[T]
 
-  def +[U: WeakTypeTag](that: Number[U]) = macro NumberImpl.addition_impl[U]
+  def +[U](that: Number[U])(implicit tag: WeakTypeTag[U]) = macro NumberImpl.addition_impl[U]
 
-
+/*
   def my_multiply[U: WeakTypeTag](n: Number[T], that: Number[U]) =
     macro NumberImpl.multiplication_impl[T, U]
 
   def *[U: WeakTypeTag](that: Number[U]) =
-    my_multiply(num, that)
+    my_multiply(num, that)*/
 }
 
 object Main extends App {
@@ -29,8 +29,9 @@ object Main extends App {
   println(a)
   println(e)
 
-  println( (add(a, b)))
-  add(Number[Second](1), Number[Second](2))
-  println(b * c)
+  println(a + b)
+  println(d + e)
+  (Number[Second](1) + Number[Second](2))
+  //println(b * c)
   //println(d + (b * c))
 }
