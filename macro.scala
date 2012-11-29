@@ -4,14 +4,15 @@ class MyMeasuredNumber[T: WeakTypeTag](val num: Int) extends MeasuredNumber[T](n
   //def my_add(n: MeasuredNumber[T], that: MeasuredNumber[T]): MeasuredNumber[T] =
   //  macro MeasuredNumberImpl.addition_impl[T]
 
-  def +[U](that: MeasuredNumber[U])(implicit tag: WeakTypeTag[U]): MeasuredNumber[T] = macro MeasuredNumberImpl.addition_impl[U]
+  def +[U](that: MeasuredNumber[U])(implicit tag: WeakTypeTag[U]): MeasuredNumber[T] = 
+    macro MeasuredNumberImpl.addition_impl[U]
 
 /*
   def my_multiply[U: WeakTypeTag](n: MeasuredNumber[T], that: MeasuredNumber[U]) =
-    macro MeasuredNumberImpl.multiplication_impl[T, U] 
+    macro MeasuredNumberImpl.multiplication_impl[T, U] */
 
-  def *[U: WeakTypeTag](that: MeasuredNumber[U]) =
-    my_multiply(num, that)*/
+  def *[U](that: MeasuredNumber[U])(implicit tag: WeakTypeTag[U], tag2: WeakTypeTag[T]): MeasuredNumber[Times[T, U]] =
+    macro MeasuredNumberImpl.multiplication_impl[T, U]
 }
 
 object Main extends App {
@@ -35,6 +36,7 @@ object Main extends App {
   //println(d + e)
 
   println(new MeasuredNumber[Second](1) + new MeasuredNumber[Second](2))
-  //println(b * c)
+  
+  println(b * c)
   //println(d + (b * c))
 }

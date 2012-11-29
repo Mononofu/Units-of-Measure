@@ -46,7 +46,6 @@ object MeasuredNumberImpl {
 
     import c.universe._
     
-
     val typeA = TypeParser.parse(c.prefix.actualType.toString) match {
       case GenericType(_, param) => param
     }
@@ -96,11 +95,24 @@ object MeasuredNumberImpl {
   }
 
   def multiplication_impl[T: c.WeakTypeTag, U: c.WeakTypeTag]
-    (c: Context)(n: c.Expr[MeasuredNumber[T]], that: c.Expr[MeasuredNumber[U]])
-    (tag: c.Expr[WeakTypeTag[U]]):
-      c.Expr[Any] = {
+    (c: Context)
+    (that: c.Expr[MeasuredNumber[U]])
+    (tag: c.Expr[WeakTypeTag[U]], tag2: c.Expr[WeakTypeTag[T]]) = {
 
     import c.universe._
+
+    val typeA = TypeParser.parse(c.prefix.actualType.toString) match {
+      case GenericType(_, param) => param
+    }
+
+    val typeB = TypeParser.parse(that.actualType.toString) match {
+      case GenericType(_, param) => param
+    }
+
+    println(s"$typeA -- $typeB")
+
+    /*if(typeA != typeB)
+      throw new Exception(s"type error, $typeA != $typeB")*/
 
     //println(that.actualType)
 
@@ -111,11 +123,11 @@ object MeasuredNumberImpl {
       Ident(freshName)
     }
 
-    val a = precompute(n.tree, typeOf[MeasuredNumber[_]])
-    val b = precompute(that.tree, typeOf[MeasuredNumber[_]])
+    val a = precompute(c.prefix.tree, typeOf[MeasuredNumber[_]])
+    val b = precompute(that.tree, that.actualType)
 
     val stats = reify(new MeasuredNumber[Times[T, U]](c.Expr[MeasuredNumber[T]](a).splice.n *
-      c.Expr[MeasuredNumber[T]](b).splice.n)).tree
+      c.Expr[MeasuredNumber[U]](b).splice.n)).tree
     c.Expr[MeasuredNumber[Times[T, U]]](Block(evals.toList, stats))
   }
 }
