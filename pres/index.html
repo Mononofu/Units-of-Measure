@@ -1,0 +1,168 @@
+<!DOCTYPE HTML>
+<html lang="en-US">
+<head>
+	<title>Macros in Scala</title>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=1274, user-scalable=no">
+	<link rel="stylesheet" href="themes/ribbon/styles/style.css">
+	<!--
+		To apply styles to the certain slides
+		use slide ID to get needed elements
+		-->
+	<style>
+		#Cover h2 {
+			color:#FFF;
+			text-align:center;
+			font-size:70px;
+			}
+		#FitToWidth h2,
+		#FitToHeight h2 {
+			color:#FFF;
+      font-size:80px;
+			text-align:center;
+      text-shadow:0 2px 2px #8D8E90;
+			}
+	</style>
+</head>
+<body class="list">
+	<header class="caption">
+		<h1>Macros in Scala</h1>
+		<p>Julian Schrittwieser</p>
+	</header>
+
+	<div class="slide cover" id="Cover"><div>
+		<section>
+			<header>
+				<h2>Macros in Scala</h2>
+			</header>
+		</section>
+	</div></div>
+
+	<div class="slide" id="Why"><div>
+		<section>
+			<header>
+				<h2>Why?</h2>
+			</header>
+			<ul>
+        <li>DSLs</li>
+        <li>advanced Assert</li>
+        <li>method inlining</li>
+        <li>type inference from SQL queries</li>
+        <li>and a lot more</li>
+      </ul>
+		</section>
+	</div></div>
+
+  <div class="slide" id="sqltyped"><div>
+    <section>
+      <header>
+        <h2>sqlτyped</h2>
+      </header>
+      <ul>
+        <li>Automatic type inference from SQL queries</li>
+        <li>automatic unboxing</li>
+        <li><a href="https://github.com/jonifreeman/sqltyped">github.com/jonifreeman/sqltyped</a></li>
+      </ul>
+      <pre>
+        <code>scala> val q = sql("select name, age from person")</code>
+        <code>scala> q() map (_ get age)</code>
+        <code>res0: List[Int] = List(36, 14)</code>
+      </pre>
+    </section>
+  </div></div>
+
+  <div class="slide" id="assert"><div>
+    <section>
+      <header>
+        <h2>Advanced assert</h2>
+      </header>
+      <ul>
+        <li>detailed output for failures</li>
+        <li><a href="https://github.com/pniederw/expecty">github.com/pniederw/expecty</a></li>
+      </ul>
+      <pre> 
+        <code>val word1 = "ping", word2 = "pong"</code>
+        <code>expect {</code>
+        <code>  person.say(word1, word2) == "pong pong"</code>
+        <code>}</code>
+      </pre>
+    </section>
+  </div></div>
+
+
+  <div class="slide" id="assertout"><div>
+    <section>
+      <header>
+        <h2>Assertion failed</h2>
+      </header>
+      <pre> 
+        <code>java.lang.AssertionError:</code>
+        <code></code>
+        <code>person.say(word1, word2) == "pong pong"</code>
+        <code>|      |   |      |      |</code>
+        <code>|      |   ping   pong   false</code>
+        <code>|      ping pong</code>
+        <code>Person(Fred,42)</code>
+      </pre>
+    </section>
+  </div></div>
+
+  <div class="slide" id="how"><div>
+    <section>
+      <header>
+        <h2>How?</h2>
+      </header>
+      <ul>
+        <li>functions called during compilation</li>
+        <li>work on expression trees, not strings</li>
+        <li>can't change syntax</li>
+        <li>access to compiler APIs</li>
+      </ul>
+    </section>
+  </div></div>
+
+
+	<div class="slide" id="example"><div>
+		<section>
+			<header>
+				<h2>Example</h2>
+			</header>
+      <pre>
+        <code>def printf(format: String, params: Any*): Unit = </code>
+        <code>  macro printf_impl</code>
+        <code> </code>
+        <code>def printf_impl(c: Context)(format: c.Expr[String], </code>
+        <code>  params: c.Expr[Any]*): c.Expr[Unit] = { ... }</code>
+
+      </pre>
+		</section>
+	</div></div>
+
+
+  <div class="slide" id="exampleimpl"><div>
+    <section>
+      <header>
+        <h2>Example</h2>
+      </header>
+      <a href="http://scalamacros.org/documentation/gettingstarted.html">implementation</a>
+    </section>
+  </div></div>
+
+  <div class="slide cover w" id="FitToWidth"><div>
+    <section>
+      <header>
+        <h2>Discussion</h2>
+      </header>
+      <img src="pictures/kitten.jpg" alt="">
+    </section>
+  </div></div>
+	<!--
+		To hide progress bar from entire presentation
+		just remove “progress” element.
+		-->
+	<div class="progress"><div></div></div>
+	<script src="scripts/script.js"></script>
+	<!-- Copyright © 2010–2012 Vadim Makeev — pepelsbey.net -->
+	<!-- Photos by John Carey — fiftyfootshadows.net -->
+</body>
+</html>
