@@ -4,5 +4,5 @@ scalacOptions += "-language:experimental.macros"
 
 
 libraryDependencies ++= Seq(
-  "org.scala-lang" % "scala-reflect" % "2.10.0-RC1"
+  "org.scala-lang" % "scala-reflect" % "2.10.0-RC2"
 )
