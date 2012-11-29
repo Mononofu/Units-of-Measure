@@ -15,14 +15,24 @@ class MeasuredNumber[T: WeakTypeTag](val n: Int) {
 
   def paramInfo(implicit tag: WeakTypeTag[MeasuredNumber[T]]) = {
     val targs = tag.tpe match { case TypeRef(_, _, args) => args }
-    s"type of $n has type arguments $targs"
+    val units = TypeParser.parse(targs(0).toString).toString
+    s"$n $units"
   }
 }
 
 abstract class Typename
-case class SimpleType(name: String) extends Typename
+case class SimpleType(name: String) extends Typename {
+  override def toString = name
+}
 case class GenericType(name: String, param: Typename) extends Typename
 case class GenericType2(name: String, param1: Typename, param2: Typename) extends Typename
+case class TypeTimes(param1: Typename, param2: Typename) extends Typename {
+  override def toString = s"$param1 * $param2"
+}
+case class TypeDivide(param1: Typename, param2: Typename) extends Typename {
+  override def toString = s"($param1) / ($param2)"
+}
+
 
 import scala.util.parsing.combinator._
 
@@ -33,7 +43,9 @@ object TypeParser extends JavaTokenParsers {
 
   // grammar
   def typename: Parser[Typename] = (
-      ident~"["~typename~","~typename~"]" ^^ { case n~"["~t~","~u~"]" => GenericType2(n, t, u) }
+      "Times["~typename~","~typename~"]" ^^ { case "Times["~t~","~u~"]" => TypeTimes(t, u) }
+    | "Divide["~typename~","~typename~"]" ^^ { case "Divide["~t~","~u~"]" => TypeDivide(t, u) }
+    | ident~"["~typename~","~typename~"]" ^^ { case n~"["~t~","~u~"]" => GenericType2(n, t, u) }
     | ident~"["~typename~"]" ^^ { case n~"["~t~"]" => GenericType(n, t) }
     | ident ^^ (n => SimpleType(n))
     )
@@ -45,7 +57,7 @@ object MeasuredNumberImpl {
     (tag: c.Expr[WeakTypeTag[T]]) = {
 
     import c.universe._
-    
+
     val typeA = TypeParser.parse(c.prefix.actualType.toString) match {
       case GenericType(_, param) => param
     }
@@ -70,27 +82,27 @@ object MeasuredNumberImpl {
     val b = precompute(c.prefix.tree, that.actualType)
 
 
-    //println(c.prefix)
+    println(showRaw(c.prefix.tree))
 
     //println(showRaw(evals(0)))
 
     /*val stats = Apply(
       Apply(
-        TypeApply(Select(Ident(newTypeName("MeasuredNumber")), 
-                         newTermName("apply")), 
-                  List(TypeTree())), 
+        TypeApply(Select(Ident(newTypeName("MeasuredNumber")),
+                         newTermName("apply")),
+                  List(TypeTree())),
         List(
-          Apply(Select(Select(Ident(newTermName("eval$1")), 
-                              newTermName("n")), 
-                      newTermName("$plus")), 
+          Apply(Select(Select(Ident(newTermName("eval$1")),
+                              newTermName("n")),
+                      newTermName("$plus")),
                 List(Select(Select(Ident(newTermName("eval$2")),
-                              newTermName("num")), 
-                              newTermName("n")))))), 
+                              newTermName("num")),
+                              newTermName("n")))))),
       List(Select(This(newTypeName("Predef")), newTermName("implicitly"))))*/
 
     val stats = reify(new MeasuredNumber[T](c.Expr[MeasuredNumber[T]](a).splice.n +
-      c.Expr[MeasuredNumber[T]](b).splice.n)).tree 
-    println(showRaw(stats))
+      c.Expr[MeasuredNumber[T]](b).splice.n)).tree
+    //println(showRaw(stats))
     c.Expr[MeasuredNumber[T]](Block(evals.toList, stats))
   }
 

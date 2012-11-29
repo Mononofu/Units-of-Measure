@@ -27,16 +27,25 @@ object Main extends App {
   val d = new MeasuredNumber[Times[Meter, Second]](5)
   val e = new MeasuredNumber[Divide[Times[Second, Meter], Second]](10)
 
-  println(a)
-  println(e)
+  println("\n==== raw numbers")
+  println("a: " + a)
+  println("e: " + e)
 
-  println(a + b)
+  println("\n==== addition")
+  println("a + b: " + (a + b))
 
   // type error
   //println(d + e)
 
-  println(new MeasuredNumber[Second](1) + new MeasuredNumber[Second](2))
+  println("in place: " + (new MeasuredNumber[Second](1) + new MeasuredNumber[Second](2)))
   
-  println(b * c)
-  //println(d + (b * c))
+
+  println("\n==== multiplication")
+  println("b * c: " + (b * c))
+
+  println("\n==== combined")
+  println("d + (b * c): " + (d + (b * c)))
+
+  // type error
+  // println("e + (b * c): " + (e + (b * c)))
 }
