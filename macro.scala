@@ -1,50 +1,55 @@
 import scala.reflect.runtime.universe.{ WeakTypeTag, Expr }
 
-class MyMeasuredNumber[T: WeakTypeTag](val num: Int) extends MeasuredNumber[T](num) {
-  //def my_add(n: MeasuredNumber[T], that: MeasuredNumber[T]): MeasuredNumber[T] =
-  //  macro MeasuredNumberImpl.addition_impl[T]
+abstract class Meter
+abstract class Second
 
-  def +[U](that: MeasuredNumber[U])(implicit tag: WeakTypeTag[U]): MeasuredNumber[T] = 
-    macro MeasuredNumberImpl.addition_impl[U]
-
-/*
-  def my_multiply[U: WeakTypeTag](n: MeasuredNumber[T], that: MeasuredNumber[U]) =
-    macro MeasuredNumberImpl.multiplication_impl[T, U] */
-
-  def *[U](that: MeasuredNumber[U])(implicit tag: WeakTypeTag[U], tag2: WeakTypeTag[T]): MeasuredNumber[Times[T, U]] =
-    macro MeasuredNumberImpl.multiplication_impl[T, U]
-}
 
 object Main extends App {
-  implicit def num2mynum[T: WeakTypeTag](n: MeasuredNumber[T]) = new MyMeasuredNumber[T](n.n)
 
   /*def add[T: WeakTypeTag](n: MeasuredNumber[T], that: MeasuredNumber[T]): MeasuredNumber[T] =
     macro MeasuredNumberImpl.addition_impl[T]*/
 
+  /* MeasuredNumber als Value class implementieren ! */
   val a = new MeasuredNumber[Meter](2)
   val b = new MeasuredNumber[Meter](3)
   val c = new MeasuredNumber[Second](4)
   val d = new MeasuredNumber[Times[Meter, Second]](5)
   val e = new MeasuredNumber[Divide[Times[Second, Meter], Second]](10)
+  val f = new MeasuredNumber[Times[Second, Times[Second, Meter]]](32)
+  val g = new MeasuredNumber[Divide[Times[Second, Meter],
+                             Divide[Meter, Times[Second, Meter]]]](10)
+  //val f = u(10, "m/s")
+
+  import MeasuredNumberImpl.u
 
   println("\n==== raw numbers")
   println("a: " + a)
   println("e: " + e)
 
+  println("tt: " + (g + f) )
+
   println("\n==== addition")
+  val tmp: MeasuredNumber[Meter] = a + b
   println("a + b: " + (a + b))
 
   // type error
   //println(d + e)
 
-  println("in place: " + (new MeasuredNumber[Second](1) + new MeasuredNumber[Second](2)))
-  
+  (new MeasuredNumber[Times[Second, Meter]](1) +
+   new MeasuredNumber[Times[Second, Meter]](2))
+
 
   println("\n==== multiplication")
   println("b * c: " + (b * c))
+  println("b * c * c: " + (e * c))
 
   println("\n==== combined")
   println("d + (b * c): " + (d + (b * c)))
+
+  val test = u(10, "m/s")
+  println(test)
+
+  val result: MeasuredNumber[Times[Meter, Second]] = b * c
 
   // type error
   // println("e + (b * c): " + (e + (b * c)))
