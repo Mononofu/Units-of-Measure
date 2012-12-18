@@ -55,7 +55,7 @@ case class Inverted(tpe: Typename) extends Typename {
 
 abstract class Typename {
   def simplify: List[Typename] = List()
-  def toTree(c: Context): c.universe.TypTree = throw new Exception("invalid state")
+  def toTree(c: Context): c.universe.Tree = throw new Exception("invalid state")
 }
 
 case class SimpleType(name: String) extends Typename {
