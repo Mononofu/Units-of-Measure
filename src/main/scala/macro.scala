@@ -1,12 +1,19 @@
+package macros
+
+import macroimpl._
+import MeasuredNumberImpl.u
+
 import scala.reflect.runtime.universe.{ WeakTypeTag, Expr }
 
 abstract class Meter
 abstract class Second
+abstract class Foot {
+  val perMeter = u(3, "ft/m")
+}
 
 
 object Main extends App {
 
-  import MeasuredNumberImpl.u
   /*def add[T: WeakTypeTag](n: MeasuredNumber[T], that: MeasuredNumber[T]): MeasuredNumber[T] =
     macro MeasuredNumberImpl.addition_impl[T]*/
 

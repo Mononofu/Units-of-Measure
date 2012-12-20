@@ -1,3 +1,5 @@
+package macroimpl
+
 import language.experimental.macros
 import scala.reflect.macros.Context
 import collection.mutable.ListBuffer
@@ -23,6 +25,7 @@ object Helpers {
       })
 
     def toMul(xs: List[Typename]): Typename = xs match {
+      case Nil => SimpleType("Unit")
       case x :: Nil => x
       case x :: y :: Nil => Times(x, y)
       case x :: xs => Times(x, toMul(xs))
@@ -54,6 +57,11 @@ class MeasuredNumber[T: WeakTypeTag](val n: Int) {
 
   def *[U](that: MeasuredNumber[U])(implicit tag: WeakTypeTag[T], tag2: WeakTypeTag[U]) =
     macro MeasuredNumberImpl.multiplication_impl[T, U]
+
+  override def equals(other: Any) = other match {
+    case that: MeasuredNumber[T] => this.toString == that.toString
+    case _ => false
+  }
 }
 
 
@@ -72,6 +80,12 @@ case class Inverted(tpe: Typename) extends Typename {
   override def equals(that: Any) = that match {
     case Inverted(t) => t == tpe
     case _ => false
+  }
+  override def simplify = tpe match {
+    case Times(a, b) => Inverted(a).simplify ++ Inverted(b).simplify
+    case Divide(a, b) => a.simplify ++ b.simplify
+    case Inverted(t) => t.simplify
+    case t => List(this)
   }
 }
 
@@ -112,31 +126,54 @@ case class Divide[T, U](param1: Typename, param2: Typename) extends Typename {
 
 import scala.util.parsing.combinator._
 
-object UnitParser extends JavaTokenParsers {
-  def parse(in: String, c: Context) = parseAll(unit, in) match {
+object UnitParser extends JavaTokenParsers with PackratParsers {
+  def parse(in: String, c: Context) = parseAll(term, in) match {
     case Success(r, _) => reduce(r.simplify).toTree(c)
-    case _ => c.abort(c.enclosingPosition, "unknown units and/or invalid format")
+    //case _ => c.abort(c.enclosingPosition, s"unknown units and/or invalid format '$in'")
   }
 
-  def toTimes(units: List[String]): Typename = units match {
-    case x :: Nil => SimpleType(x)
-    case x :: y :: Nil => Times(SimpleType(x), SimpleType(y))
-    case x :: xs => Times(SimpleType(x), toTimes(xs))
+  def toTimes(units: List[Typename]): Typename = units match {
+    case x :: Nil => x
+    case x :: y :: Nil => Times(x, y)
+    case x :: xs => Times(x, toTimes(xs))
   }
 
-  def unit: Parser[Typename] = (
-      rep1sep(unitname, "*")~"/"~rep1sep(unitname, "*") ^^ { case times~"/"~divide =>
-        Divide(toTimes(times), toTimes(divide)) }
-    | rep1sep(unitname, "*") ^^ { case units => toTimes(units)}
+  def toTypenames(units: List[UnitParser.~[String, Typename]]): List[Typename] = units match {
+    case Nil => Nil
+    case ("*"~x) :: xs => x :: toTypenames(xs)
+    case (""~x) :: xs => x :: toTypenames(xs)
+    case ("/"~x) :: xs => Inverted(x) :: toTypenames(xs)
+  }
 
+  def power(t: Typename, n: Int): Typename = n match {
+    case 1 => t
+    case 0 => SimpleType("1")
+    case -1 => Inverted(t)
+    case n if n > 0 => Times(t, power(t, n - 1))
+    case _ => Times(Inverted(t), power(t, n + 1))
+  }
+
+  lazy val term: PackratParser[Typename] =
+    longFactor~rep(("*"|"/"|"")~longFactor) ^^ {
+      case t~Nil => t
+      case t~l => Times(t, toTimes(toTypenames(l)))
+    }
+  lazy val longFactor: PackratParser[Typename] = (
+      shortFactor~"^"~wholeNumber ^^ { case t~"^"~n => power(t, n.toInt) }
+    | shortFactor
+    )
+  lazy val shortFactor: PackratParser[Typename] = (
+      unitname ^^ { case u => SimpleType(u) }
+    | "("~>term<~")"
     )
 
-  def unitname: Parser[String] = (
+  lazy val unitname: PackratParser[String] = (
       "m" ^^ { _ => "Meter" }
     | "s" ^^ { _ => "Second" }
     | "c" ^^ { _ => "Gram" }
     | "w" ^^ { _ => "Watt" }
-    | "1"
+    | "ft" ^^ { _ => "Foot" }
+    | "1" ^^ { _ => "Unit" }
     )
 }
 
@@ -147,11 +184,15 @@ object TypeParser extends JavaTokenParsers {
 
   // grammar
   def typename: Parser[Typename] = (
-      "Times["~typename~","~typename~"]" ^^ { case "Times["~t~","~u~"]" => Times(t, u) }
-    | "Divide["~typename~","~typename~"]" ^^ { case "Divide["~t~","~u~"]" => Divide(t, u) }
-    | ident~"["~typename~"]" ^^ { case n~"["~t~"]" => GenericType(n, t) }
-    | ident ^^ (n => new SimpleType(n))
+      id~"["~typename~","~typename~"]" ^^ {
+        case "Times"~"["~t~","~u~"]" => Times(t, u)
+        case "Divide"~"["~t~","~u~"]" => Divide(t, u)
+      }
+    | id~"["~typename~"]" ^^ { case n~"["~t~"]" => GenericType(n, t) }
+    | id ^^ (n => new SimpleType(n))
     )
+
+  def id: Parser[String] = rep1sep(ident, ".") ^^ ( _.last )
 }
 
 object MeasuredNumberImpl {
@@ -161,7 +202,7 @@ object MeasuredNumberImpl {
   def u_impl(c: Context)(nEx: c.Expr[Int], unitEx: c.Expr[String]): c.Expr[Any] = {
     import c.universe._
 
-    println(showRaw(c.macroApplication))
+    //println(showRaw(c.macroApplication))
 
     val evals = ListBuffer[ValDef]()
 
@@ -209,7 +250,7 @@ object MeasuredNumberImpl {
     (evals, aID, bID)
   }
 
-  def parseType(c: Context)(tpe: c.Type) = TypeParser.parse(tpe.toString.replace(".", "").replace("$", "")) match {
+  def parseType(c: Context)(tpe: c.Type) = TypeParser.parse(tpe.toString.replace("$", "")) match {
       case GenericType(_, param) => reduce(param.simplify.sortBy(_.toString))
     }
 
@@ -221,6 +262,7 @@ object MeasuredNumberImpl {
 
     import c.universe._
 
+    println(tag.actualType.toString)
     val typeA = parseType(c)(tag.actualType)
     val typeB = parseType(c)(that.actualType)
 
@@ -228,6 +270,8 @@ object MeasuredNumberImpl {
       c.abort(c.enclosingPosition, s"type error, $typeA != $typeB")
 
     val resultType = typeA.toTree(c)
+
+    println(s"result type is $resultType")
 
     val (evals, aID, bID) = precompute(c)(that.tree, c.prefix.tree)
 
