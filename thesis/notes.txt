@@ -1,0 +1,6 @@
+good blog posts about the units of measure system in F#:
+
+http://blogs.msdn.com/andrewkennedy/archive/2008/08/29/units-of-measure-in-f-part-one-introducing-units.aspx
+http://blogs.msdn.com/andrewkennedy/archive/2008/09/02/units-of-measure-in-f-part-two-unit-conversions.aspx
+http://blogs.msdn.com/andrewkennedy/archive/2008/09/04/units-of-measure-in-f-part-three-generic-units.aspx
+http://blogs.msdn.com/andrewkennedy/archive/2009/06/09/units-of-measure-in-f_2300_-part-four-parameterized-types.aspx
