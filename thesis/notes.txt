@@ -4,3 +4,12 @@ http://blogs.msdn.com/andrewkennedy/archive/2008/08/29/units-of-measure-in-f-par
 http://blogs.msdn.com/andrewkennedy/archive/2008/09/02/units-of-measure-in-f-part-two-unit-conversions.aspx
 http://blogs.msdn.com/andrewkennedy/archive/2008/09/04/units-of-measure-in-f-part-three-generic-units.aspx
 http://blogs.msdn.com/andrewkennedy/archive/2009/06/09/units-of-measure-in-f_2300_-part-four-parameterized-types.aspx
+
+in haskell:
+http://code.google.com/p/dimensional/
+
+in C++ with Boost.Units
+http://www.boost.org/doc/libs/1_52_0/doc/html/boost_units.html
+
+docs for writing big macros:
+http://docs.scala-lang.org/overviews/macros/overview.html#writing_bigger_macros

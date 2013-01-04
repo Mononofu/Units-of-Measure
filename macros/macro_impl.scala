@@ -199,10 +199,11 @@ object MeasuredNumberImpl {
 
   def u(nEx: Int, unitEx: String) = macro u_impl
 
-  def u_impl(c: Context)(nEx: c.Expr[Int], unitEx: c.Expr[String]): c.Expr[Any] = {
+  def u_impl(c: Context)
+        (nEx: c.Expr[Int], unitEx: c.Expr[String]): c.Expr[Any] = {
     import c.universe._
 
-    //println(showRaw(c.macroApplication))
+    println(showRaw(c))
 
     val evals = ListBuffer[ValDef]()
 
