@@ -7,9 +7,20 @@ http://blogs.msdn.com/andrewkennedy/archive/2009/06/09/units-of-measure-in-f_230
 
 in haskell:
 http://code.google.com/p/dimensional/
+http://hackage.haskell.org/package/unittyped
+http://www.reddit.com/r/haskell/comments/16ve2o/is_it_possible_to_use_the_data_type_system_in/
 
 in C++ with Boost.Units
 http://www.boost.org/doc/libs/1_52_0/doc/html/boost_units.html
 
+in Ada
+http://www.dmitry-kazakov.de/ada/units.htm#Units
+
+in Java
+http://www.unitsofmeasurement.org/
+
 docs for writing big macros:
 http://docs.scala-lang.org/overviews/macros/overview.html#writing_bigger_macros
+
+macro paradise:
+https://github.com/scalamacros/sbt-example-paradise/blob/master/project/Build.scala#L9-11

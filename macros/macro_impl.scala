@@ -41,6 +41,7 @@ object Helpers {
 
 import Helpers._
 
+// AnyVal breaks type tags :/
 class MeasuredNumber[T: WeakTypeTag](val n: Int) {
   override def toString = paramInfo
 

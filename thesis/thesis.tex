@@ -1,0 +1,144 @@
+%Erzeugt mit dem LaTeX-Generator: http://latex.sehnot.de
+
+%Schriftgröße, Layout, Papierformat, Art des Dokumentes
+\documentclass[12pt,oneside,a4paper]{scrbook}
+
+%Einstellungen der Seitenränder
+\usepackage[left=3cm,right=2cm,top=2cm,bottom=2cm,includeheadfoot]{geometry}
+
+%neue Rechtschreibung
+%\usepackage[ngerman]{babel}
+
+%Umlaute ermöglichen
+% \usepackage{fontspec}
+% \setromanfont{TeX Gyre Pagella}
+
+% \usepackage[math-style=iso]{unicode-math}
+% \setmathfont{Asana Math}
+
+\usepackage{graphicx}
+\usepackage{wrapfig}
+\usepackage[utf8x]{inputenc}
+\usepackage{url}
+\usepackage{multirow}
+\usepackage{amsmath}
+\usepackage{hyperref}
+\usepackage{multicol}
+\usepackage{amsthm}
+\usepackage[official]{eurosym}
+\usepackage{setspace}
+\newtheorem{definition}{Definition}
+\newtheorem{satz}{Theorem}
+\theoremstyle{definition}
+%Zitieren
+\usepackage[longnamesfirst, authoryear]{natbib}
+
+%Kopf- und Fußzeile
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+
+\newcommand{\HRule}{\rule{\linewidth}{0.5mm}}
+
+%Kopfzeile rechts bzw. außen
+\fancyhead[R]{\nouppercase{\leftmark}}
+%Linie oben
+\renewcommand{\headrulewidth}{0.5pt}
+
+%Fußzeile links bzw. innen
+\fancyfoot[L]{Units of Measure}
+%Fußzeile rechts bzw. außen
+\fancyfoot[R]{\thepage}
+%Linie unten
+\renewcommand{\footrulewidth}{0.5pt}
+
+\clubpenalty = 50000
+\widowpenalty = 50000
+
+
+
+
+\title{Units of Measure}
+\author{Julian Schrittwieser}
+\date{\today}
+
+\begin{document}
+
+
+\begin{titlepage}
+
+\begin{center}
+
+
+% Upper part of the page
+\includegraphics[width=0.4\textwidth]{tu-logo.png}\\[3cm]
+
+
+\textsc{\Large Software \& Information Engineering}\\[0.5cm]
+
+
+% Title
+\HRule \\[0.8cm]
+{ \huge \bfseries Units of Measure}\\[0.4cm]
+\Large A Scala Macro System
+
+\HRule \\[1.5cm]
+
+\vfill
+
+
+% Author and supervisor
+\begin{minipage}{0.4\textwidth}
+\begin{flushleft} \large
+\emph{Author:}\\
+Julian \textsc{Schrittwieser}
+\end{flushleft}
+\end{minipage}
+\begin{minipage}{0.4\textwidth}
+\begin{flushright} \large
+\emph{Advisor:} \\
+Univ.-Prof. Dr. Jens \textsc{Knoop}
+\end{flushright}
+\end{minipage}
+
+\vfill
+
+% Bottom of the page
+{\large Februar 12th, 2013}
+
+\end{center}
+
+\end{titlepage}
+
+\pagenumbering{roman} % Roman numerals, other styles possible: http://www.image.ufl.edu/help/latex/intext.shtml
+\setcounter{page}{2}
+\onehalfspacing
+\chapter*{Preface}
+
+Ipsum Lorem
+\\ \\
+Vienna, February 12th, 2010  \hfill Julian Schrittwieser
+
+\singlespacing
+\tableofcontents
+\onehalfspacing
+
+\chapter{Introduction}
+\pagenumbering{arabic} % Roman numerals
+\setcounter{page}{1}
+\section{Motivation}
+
+\chapter{Related Work}
+
+\singlespacing
+\bibliographystyle{dinat}
+\bibliography{thesis}{}
+\addcontentsline{toc}{chapter}{A \;References}
+
+\chapter*{}
+\onehalfspacing
+Ich erkläre, dass ich diese Fachbereichsarbeit ausschließlich selbst und ohne Gebrauch unerlaubter Hilfsmittel oder Hilfen verfasst habe.
+
+
+
+\end{document}
