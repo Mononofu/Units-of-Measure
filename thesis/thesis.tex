@@ -33,6 +33,9 @@
 %Zitieren
 \usepackage[longnamesfirst, authoryear]{natbib}
 \usepackage{minted}
+\usepackage{booktabs}
+
+
 
 %Kopf- und Fußzeile
 \usepackage{fancyhdr}
@@ -47,7 +50,7 @@
 \renewcommand{\headrulewidth}{0.5pt}
 
 %Fußzeile links bzw. innen
-\fancyfoot[L]{Units of Measure}
+\fancyfoot[L]{Units of Measure - a Scala Macro System}
 %Fußzeile rechts bzw. außen
 \fancyfoot[R]{\thepage}
 %Linie unten
@@ -59,7 +62,7 @@
 
 
 
-\title{Units of Measure}
+\title{Units of Measure - a Scala Macro System}
 \author{Julian Schrittwieser}
 \date{\today}
 
@@ -133,6 +136,9 @@ Vienna, February 12th, 2010  \hfill Julian Schrittwieser
 \section{Nomenclature}
 Throughout this paper, I use \emph{Measure} to refer to a number annotated with it's corresponding unit. The exact implementation of this annotation depends on the context, some libraries use static type informations, others fields in an object.
 
+\section{Source Code}
+The source code for all benchmarks mentioned can be found on GitHub: \url{https://github.com/Mononofu/Units-of-Measure/tree/master/thesis/benchmarks}. This same repository also contains the source for this document (\url{https://github.com/Mononofu/Units-of-Measure/tree/master/thesis}) as well as the implementation of the Units of Measurement system in Scala (\url{https://github.com/Mononofu/Units-of-Measure}).
+
 \chapter{Related Work}
 
 In principle, there are two distinct ways to implement units of measurement in a programming language: Either statically as part of the type system, or dynamically with objects that know their own unit. Each approach has its own merits and disadvantages, so I examine a few existing implementations in common languages before creating my own solution.
@@ -158,10 +164,7 @@ class Measure<T extends java.lang.Number> {
 
 Java has a standardized Units of Measurement API \citep{Units13} with several implementations, both open source and commercial. I will focus on JScience here \citep{Dautelle11}. In addition to support for physical units, JScience also contains libraries for simple mathematical functions, currencies and a linear algebra module. Here, I only focus on parts pertaining to Units of Measurement.
 
-JScience represents Measures using the class \emph{Amount}, but users are free to create their own implementations of \emph{Measurable}. Measures are created with a flexible static helper function (\emph{valueOf}) from a range of different inputs. For details, see the short usage example below in Figure \ref{code:jscience_example}.
-
-Unit safety is enforced both by the type system at compile time (Measures are generic classes with their units as type parameters) and comparison functions at run time (\emph{equals} only returns true if both the value and the interval match, etc.).
-
+JScience represents Measures using the class \emph{Amount}, but users are free to create their own implementations of \emph{Measurable}. Measures are created with a flexible static helper function (\emph{valueOf}) from a range of different inputs. For details, see the short usage example below in Figure \ref{code:jscience_example}. Essentially, \emph{Amount} is a wrapper class that tags a number with its corresponding unit - as shown in \ref{code:naive_java_measure} - and provides a set of helper and conversion functions.
 
 \begin{figure}
 \begin{minted}{java}
@@ -179,9 +182,52 @@ Dimension d   = u.getDimension();
 \label{code:jscience_example}
 \end{figure}
 
+Unit safety is enforced both by the type system at compile time (Measures are generic classes with their units as type parameters) and comparison functions at run time (\emph{equals} only returns true if both the value and the interval match, etc.).
+
+Unfortunately, the performance hit due to the wrapper classes is quite severe - I experienced a slowdown of around 80 on my machine in a simple benchmark, compared to normal primitives (\emph{int} and \emph{double}) (see Figure \ref{bench:jscience}).
+
+At the moment, Units of Measurement Systems in Java are only practicable in systems that are not performance critical. Alas, many systems that would benefit most are performance critical - computer game engines, high frequency trading, etc. Therefore, Units of Measurements remain a niche application in Java.
+
+\begin{figure}
+\begin{tabular}{lrrr}
+method          & int    & double  & JScience \\
+\midrule
+addition        & 1.0 ns &  1.8 ns    &   149.5 ns \\
+multiplication  & 1.1 ns &  1.9 ns    &   162.3 ns
+\end{tabular}
+\caption{A simple benchmark of JScience compared to primitives data types. JScience is at least 80 times slower on average.}
+\label{bench:jscience}
+\end{figure}
+
 
 \subsection{Python - units}
-\citep{Donohue12}
+
+Python is a dynamic language, so the only way to make a system of measurements work is to create a dynamic system that relies on tagged numbers. That's exactly what \emph{units} \citep{Donohue12} does.
+
+\begin{figure}
+\begin{minted}{python}
+metre, second = unit('m'), unit('s')                   # define units
+print(metre(10) / second(2))                           # 5 m / s
+newton = named_unit('N', ['kg', 'm'], ['s', 's'], 1)   # 1 N = 1 kg*m/s^2
+units.predefined.define_units()                        # SI units and more
+\end{minted}
+\caption{\emph{units} makes it very simple to define custom units and to add conversions to existing units, while also including all standard units for immediate use. Calculation happens just like with primitives, thanks to operator overloading.}
+\label{code:python_units}
+\end{figure}
+
+
+
+\begin{figure}
+\begin{tabular}{lrrr}
+method          & int    & double  & units \\
+\midrule
+addition        & 151 ns &  164 ns    &   4136 ns \\
+multiplication  & 159 ns &  165 ns    &   22.352 ns
+\end{tabular}
+\caption{Even though Python is an interpreted language, there is a large difference between primitive numbers, and those provided by the \emph{units} library. The slowdown is especially severe for the multiplication as a new unit has to be generated for the result.}
+\label{bench:python_units}
+\end{figure}
+
 
 \section{Static Systems}
 
