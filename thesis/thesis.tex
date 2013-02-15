@@ -32,6 +32,7 @@
 \theoremstyle{definition}
 %Zitieren
 \usepackage[longnamesfirst, authoryear]{natbib}
+\usepackage{minted}
 
 %Kopf- und Fußzeile
 \usepackage{fancyhdr}
@@ -112,7 +113,8 @@ Univ.-Prof. Dr. Jens \textsc{Knoop}
 
 \pagenumbering{roman} % Roman numerals, other styles possible: http://www.image.ufl.edu/help/latex/intext.shtml
 \setcounter{page}{2}
-\onehalfspacing
+
+% \onehalfspacing
 \chapter*{Preface}
 
 Ipsum Lorem
@@ -121,14 +123,84 @@ Vienna, February 12th, 2010  \hfill Julian Schrittwieser
 
 \singlespacing
 \tableofcontents
-\onehalfspacing
+%\onehalfspacing
 
 \chapter{Introduction}
 \pagenumbering{arabic} % Roman numerals
 \setcounter{page}{1}
 \section{Motivation}
 
+\section{Nomenclature}
+Throughout this paper, I use \emph{Measure} to refer to a number annotated with it's corresponding unit. The exact implementation of this annotation depends on the context, some libraries use static type informations, others fields in an object.
+
 \chapter{Related Work}
+
+In principle, there are two distinct ways to implement units of measurement in a programming language: Either statically as part of the type system, or dynamically with objects that know their own unit. Each approach has its own merits and disadvantages, so I examine a few existing implementations in common languages before creating my own solution.
+
+\section{Dynamic Systems}
+
+Some programming languages do not give their users much choice, because they either completely lack static type systems (dynamic languages like Python or Ruby) or their type system is not sophisticated enough for a units of measurement library. In general, those dynamic systems allow access to unit information at runtime but in turn pay a heavy performance price: Each number is stored as a full blown object (see figure \ref{code:naive_java_measure}), not as a simple primitive like a normal number. Thus, all calculations incur additional memory lookups and values take additional space.
+
+\begin{figure}
+\begin{minted}{java}
+class Measure<T extends java.lang.Number> {
+  T      value;
+  Unit   unit;
+}
+\end{minted}
+\caption{A naive implementation of a number annotated with its unit in Java. Actual size depends on the number used, but at least 8 bytes are used by the object itself, and further 4/8 bytes (32/64 bit system, resp.) are needed for the reference to the unit.}
+\label{code:naive_java_measure}
+\end{figure}
+
+
+
+\subsection{Java - JScience}
+
+Java has a standardized Units of Measurement API \citep{Units13} with several implementations, both open source and commercial. I will focus on JScience here \citep{Dautelle11}. In addition to support for physical units, JScience also contains libraries for simple mathematical functions, currencies and a linear algebra module. Here, I only focus on parts pertaining to Units of Measurement.
+
+JScience represents Measures using the class \emph{Amount}, but users are free to create their own implementations of \emph{Measurable}. Measures are created with a flexible static helper function (\emph{valueOf}) from a range of different inputs. For details, see the short usage example below in Figure \ref{code:jscience_example}.
+
+Unit safety is enforced both by the type system at compile time (Measures are generic classes with their units as type parameters) and comparison functions at run time (\emph{equals} only returns true if both the value and the interval match, etc.).
+
+
+\begin{figure}
+\begin{minted}{java}
+Amount<Mass> m0            = Amount.valueOf(100, POUND);
+Amount<ElectricCurrent> m1 = Amount.valueOf("234 mA").to(MICRO(AMPERE));
+
+// m0 =    100 lb
+// m1 = 234000 uA
+
+Unit<Mass> u  = m0.getUnit();
+Dimension d   = u.getDimension();
+
+\end{minted}
+\caption{Example for JScience from the official documentation \citep{Dautelle11}. Usage is straightforward and unit information is still available at runtime.}
+\label{code:jscience_example}
+\end{figure}
+
+
+\subsection{Python - units}
+\citep{Donohue12}
+
+\section{Static Systems}
+
+\subsection{F\#}
+\citep{Kennedy08:1}
+\citep{Kennedy08:2}
+\citep{Kennedy08:3}
+\citep{Kennedy08:4}
+
+\subsection{C++ - Boost.Units}
+\citep{Schabel10}
+
+\subsection{Haskell - Dimensional}
+\citep{Buckwalter06}
+
+\subsection{Scala}
+\citep{Hans12}
+\citep{Nygard09}
+\citep{McBeath08}
 
 \singlespacing
 \bibliographystyle{dinat}
