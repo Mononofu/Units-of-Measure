@@ -164,7 +164,7 @@ class Measure<T extends java.lang.Number> {
 
 Java has a standardized Units of Measurement API \citep{Units13} with several implementations, both open source and commercial. I will focus on JScience here \citep{Dautelle11}. In addition to support for physical units, JScience also contains libraries for simple mathematical functions, currencies and a linear algebra module. Here, I only focus on parts pertaining to Units of Measurement.
 
-JScience represents Measures using the class \emph{Amount}, but users are free to create their own implementations of \emph{Measurable}. Measures are created with a flexible static helper function (\emph{valueOf}) from a range of different inputs. For details, see the short usage example below in Figure \ref{code:jscience_example}. Essentially, \emph{Amount} is a wrapper class that tags a number with its corresponding unit - as shown in \ref{code:naive_java_measure} - and provides a set of helper and conversion functions.
+JScience represents Measures using the class \verb/Amount/, but users are free to create their own implementations of \verb/Measurable/. Measures are created with a flexible static helper function (\verb/valueOf/) from a range of different inputs. For details, see the short usage example below in Figure \ref{code:jscience_example}. Essentially, \verb/Amount/ is a wrapper class that tags a number with its corresponding unit - as shown in \ref{code:naive_java_measure} - and provides a set of helper and conversion functions.
 
 \begin{figure}
 \begin{minted}{java}
@@ -182,9 +182,9 @@ Dimension d   = u.getDimension();
 \label{code:jscience_example}
 \end{figure}
 
-Unit safety is enforced both by the type system at compile time (Measures are generic classes with their units as type parameters) and comparison functions at run time (\emph{equals} only returns true if both the value and the interval match, etc.).
+Unit safety is enforced both by the type system at compile time (Measures are generic classes with their units as type parameters) and comparison functions at run time (\verb/equals/ only returns true if both the value and the interval match, etc.).
 
-Unfortunately, the performance hit due to the wrapper classes is quite severe - I experienced a slowdown of around 80 on my machine in a simple benchmark, compared to normal primitives (\emph{int} and \emph{double}) (see Figure \ref{bench:jscience}).
+Unfortunately, the performance hit due to the wrapper classes is quite severe - I experienced a slowdown of around 80 on my machine in a simple benchmark, compared to normal primitives (\verb/int/ and \verb/double/) (see Figure \ref{bench:jscience}).
 
 At the moment, Units of Measurement Systems in Java are only practicable in systems that are not performance critical. Alas, many systems that would benefit most are performance critical - computer game engines, high frequency trading, etc. Therefore, Units of Measurements remain a niche application in Java.
 
@@ -202,7 +202,7 @@ multiplication  & 1.1 ns &  1.9 ns    &   162.3 ns
 
 \subsection{Python - units}
 
-Python is a dynamic language, so the only way to make a system of measurements work is to create a dynamic system that relies on tagged numbers. That's exactly what \emph{units} \citep{Donohue12} does.
+Python is a dynamic language, so the only way to make a system of measurements work is to create a dynamic system that relies on tagged numbers. That's exactly what \emph{units} \citep{Donohue12} does. Usage is very simple, as seen in Figure \ref{code:python_units}. Thanks to operator overloading and the dynamic nature of Python code, units can be introduced into legacy code with only a few changes.
 
 \begin{figure}
 \begin{minted}{python}
@@ -231,11 +231,30 @@ multiplication  & 159 ns &  165 ns    &   22.352 ns
 
 \section{Static Systems}
 
+Static systems are the complete opposite compared to dynamic systems: They usually don't provide any unit information at runtime, but also don't incur any performance overhead - all units are checked at compile time. To achieve this, they rely on a powerful type system or even compiler plugins, effectively offloading much of the work on the compiler.
+
 \subsection{F\#}
+
+F\# is one of only a few languages that have integrated a system of units into the language itself. This allows for easy usage and definition of units since they can rely on special syntax.
 \citep{Kennedy08:1}
-\citep{Kennedy08:2}
-\citep{Kennedy08:3}
-\citep{Kennedy08:4}
+
+As usual, F\# comes with all common units - both SI and Imperial - predefined \citep{Kennedy08:2}, but it's also easy to interface with code that is not unit aware: Primitive types like \verb/float/ are just a type alias for \verb/float<1>/ (a float with unit dimension).
+
+Thanks to the language support, units also work with generics, including full type (unit) inference. As an example, if we define a simple function \verb/let sqr(x: float<_>) = x*x/, F\# will automatically infer that it takes any \verb/float<'u>/ and returns a \verb/float<'u^2>/ \citep{Kennedy08:3}. This works for types of arbitrary complexity, making the programmers life much simpler.
+
+The support for generics also extends to custom types - it's enough to annotate a type parameter with \verb/[<Measure>]/ to make it a unit parameter \citep{Kennedy08:4}. For a example, see Figure \ref{code:fsharp}.
+
+
+\begin{figure}
+\begin{minted}{fsharp}
+[<Measure>] type kg                 // define a unit
+let gravity = 9.81<m/s^2>           // use units
+// generic type
+type Vector2< [<Measure>] 'u > = { x: float<'u>, y: float<'u> }
+\end{minted}
+\caption{Usage examples for the unit system in F\#.}
+\label{code:fsharp}
+\end{figure}
 
 \subsection{C++ - Boost.Units}
 \citep{Schabel10}
