@@ -280,7 +280,55 @@ work(quantity<unit<force_dimension,System>,Y> F,
 
 
 \subsection{Haskell - Dimensional}
-\citep{Buckwalter06}
+Haskell's Dimensional module \citep{Buckwalter06} completely relies on the type system and is the most elegant of the unit systems presented here. It relies on a single data type (Dimensional, see Figure \ref{code:haskell_dimensional}), parameterized with the exponents of different physical dimensions (Figure \ref{code:haskell_dim}). While only integer exponents are possible, rational exponents can be avoided in practice.
+
+\begin{figure}
+\begin{minted}{haskell}
+newtype (Variant v, Dims d)
+      => Dimensional v d a = Dimensional a deriving (Show, Eq, Ord)
+\end{minted}
+\caption{Dimensional, the unit system's fundamental data type. Since 'a', representing the underlying number, is the only non-phantom type Dimensional is defined as a newtype and doesn't incur any runtime overhead. From \citep{Buckwalter06}.}
+\label{code:haskell_dimensional}
+\end{figure}
+
+
+
+\begin{figure}
+\begin{minted}{haskell}
+data (NumType l,    -- Length.
+      NumType m,    -- Mass.
+      NumType t,    -- Time.
+      NumType i,    -- Electric current.
+      NumType th,   -- Thermodynamic temperature.
+      NumType n,    -- Amount of substance.
+      NumType j)    -- Luminous intensity.
+   => Dim l m t i th n j
+
+type DLength      = Dim Pos1 Zero Zero Zero Zero Zero Zero
+type DForce       = Dim Pos1 Pos1 Neg2 Zero Zero Zero Zero
+\end{minted}
+\caption{The type Dim, containing the physical base dimensions, and two derived dimesions, from \citep{Buckwalter06}.}
+\label{code:haskell_dim}
+\end{figure}
+
+
+As with the other systems, operator overloading allows for easy calculations. \verb/*~/ and \verb|/~| can be used to attach units to numbers and remove them again.
+
+
+\begin{figure}
+\begin{minted}{haskell}
+escapeVelocity :: (Floating a) => Mass a -> Length a -> Velocity a
+escapeVelocity m r = sqrt (two * g * m / r)
+  where
+    two = 2 *~ one
+    g = 6.6720e-11 *~ (newton * meter ^ pos2 / kilo gram ^ pos2)
+\end{minted}
+\caption{An example function using the Dimensional module, from \citep{Buckwalter06}.}
+\label{code:haskell_dimensional}
+\end{figure}
+
+
+
 
 \subsection{Scala}
 \citep{Hans12}
