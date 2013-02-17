@@ -221,7 +221,7 @@ units.predefined.define_units()                        # SI units and more
 \begin{tabular}{lrrr}
 method          & int    & double  & units \\
 \midrule
-addition        & 151 ns &  164 ns    &   4136 ns \\
+addition        & 151 ns &  164 ns    &    4.136 ns \\
 multiplication  & 159 ns &  165 ns    &   22.352 ns
 \end{tabular}
 \caption{Even though Python is an interpreted language, there is a large difference between primitive numbers, and those provided by the \emph{units} library. The slowdown is especially severe for the multiplication as a new unit has to be generated for the result.}
@@ -257,7 +257,27 @@ type Vector2< [<Measure>] 'u > = { x: float<'u>, y: float<'u> }
 \end{figure}
 
 \subsection{C++ - Boost.Units}
-\citep{Schabel10}
+
+The Boost.Unit library takes advantage of the power of C++ templates in the form of the Boost Metaprogramming Library (MPL).  It relies on the compiler to adequately optimize the code, but then incurs no performance overhead at runtime \citep{Schabel10}.However, since it heavily relies on template metaprogramming it has stringent requirements for the compiler and only works on new, standard compliant compilers.
+
+Variable definitions work as always (\verb/quantity<length> L = 2.0*meters;/), and thanks to operator overloading arithmetic is exactly the same as for primitives.
+
+Boost.Units is also independent of any single unit systems - functions can be defined generically, for arbitrary unit systems, using just the types of the dimensions. For an example, see Figure \ref{code:boost_units_generic}. Users can then define their own unit systems to interface with already existing library code.
+
+\begin{figure}
+\begin{minted}{c++}
+template<class System,class Y>
+quantity<unit<energy_dimension,System>,Y>
+work(quantity<unit<force_dimension,System>,Y> F,
+     quantity<unit<length_dimension,System>,Y> dx)
+{
+    return F*dx;
+}
+\end{minted}
+\caption{The physical definition of work - computed for an arbitrary unit system, from \citep{Schabel10}.}
+\label{code:boost_units_generic}
+\end{figure}
+
 
 \subsection{Haskell - Dimensional}
 \citep{Buckwalter06}
