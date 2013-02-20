@@ -131,10 +131,12 @@ Vienna, February 12th, 2010  \hfill Julian Schrittwieser
 \chapter{Introduction}
 \pagenumbering{arabic} % Roman numerals
 \setcounter{page}{1}
+
 \section{Motivation}
+mars rover example
 
 \section{Nomenclature}
-Throughout this paper, I use \emph{Measure} to refer to a number annotated with it's corresponding unit. The exact implementation of this annotation depends on the context, some libraries use static type informations, others fields in an object.
+Throughout this paper, I use \emph{Measure} to refer to a number annotated with its corresponding units. The exact implementation of this annotation depends on the context, some libraries use static type informations, others fields in an object. \emph{Units of Measure} is used to refer to any system that provides such an implementation, including methods to perform arithmetic with \emph{Measure}s.
 
 \section{Source Code}
 The source code for all benchmarks mentioned can be found on GitHub: \url{https://github.com/Mononofu/Units-of-Measure/tree/master/thesis/benchmarks}. This same repository also contains the source for this document (\url{https://github.com/Mononofu/Units-of-Measure/tree/master/thesis}) as well as the implementation of the Units of Measurement system in Scala (\url{https://github.com/Mononofu/Units-of-Measure}).
@@ -231,16 +233,16 @@ multiplication  & 159 ns &  165 ns    &   22.352 ns
 
 \section{Static Systems}
 
-Static systems are the complete opposite compared to dynamic systems: They usually don't provide any unit information at runtime, but also don't incur any performance overhead - all units are checked at compile time. To achieve this, they rely on a powerful type system or even compiler plugins, effectively offloading much of the work on the compiler.
+Static systems are the complete opposite compared to dynamic systems: They usually do not provide any unit information at runtime, but also do not incur any performance overhead - all units are checked at compile time. To achieve this, they rely on a powerful type system or even compiler plugins, effectively offloading much of the work on the compiler.
 
 \subsection{F\#}
 
-F\# is one of only a few languages that have integrated a system of units into the language itself. This allows for easy usage and definition of units since they can rely on special syntax.
+\verb/F#/ is one of only a few languages that have integrated a system of units into the language itself. This allows for easy usage and definition of units since they can rely on special syntax.
 \citep{Kennedy08:1}
 
-As usual, F\# comes with all common units - both SI and Imperial - predefined \citep{Kennedy08:2}, but it's also easy to interface with code that is not unit aware: Primitive types like \verb/float/ are just a type alias for \verb/float<1>/ (a float with unit dimension).
+As usual, \verb/F#/ comes with all common units - both SI and Imperial - predefined \citep{Kennedy08:2}, but it's also easy to interface with code that is not unit aware: Primitive types like \verb/float/ are just a type alias for \verb/float<1>/ (a float with unit dimension).
 
-Thanks to the language support, units also work with generics, including full type (unit) inference. As an example, if we define a simple function \verb/let sqr(x: float<_>) = x*x/, F\# will automatically infer that it takes any \verb/float<'u>/ and returns a \verb/float<'u^2>/ \citep{Kennedy08:3}. This works for types of arbitrary complexity, making the programmers life much simpler.
+Thanks to the language support, units also work with generics, including full type (unit) inference. As an example, if we define a simple function \verb/let sqr(x: float<_>) = x*x/, \verb/F#/ will automatically infer that it takes any \verb/float<'u>/ and returns a \verb/float<'u^2>/ \citep{Kennedy08:3}. This works for types of arbitrary complexity, making the programmers life much simpler.
 
 The support for generics also extends to custom types - it's enough to annotate a type parameter with \verb/[<Measure>]/ to make it a unit parameter \citep{Kennedy08:4}. For a example, see Figure \ref{code:fsharp}.
 
@@ -258,11 +260,11 @@ type Vector2< [<Measure>] 'u > = { x: float<'u>, y: float<'u> }
 
 \subsection{C++ - Boost.Units}
 
-The Boost.Unit library takes advantage of the power of C++ templates in the form of the Boost Metaprogramming Library (MPL).  It relies on the compiler to adequately optimize the code, but then incurs no performance overhead at runtime \citep{Schabel10}.However, since it heavily relies on template metaprogramming it has stringent requirements for the compiler and only works on new, standard compliant compilers.
+The \verb/Boost.Unit/ library takes advantage of the power of C++ templates in the form of the Boost Metaprogramming Library (MPL).  It relies on the compiler to adequately optimize the code, but then incurs no performance overhead at runtime \citep{Schabel10}.However, since it heavily relies on template metaprogramming it has stringent requirements for the compiler and only works on new, standard compliant compilers.
 
 Variable definitions work as always (\verb/quantity<length> L = 2.0*meters;/), and thanks to operator overloading arithmetic is exactly the same as for primitives.
 
-Boost.Units is also independent of any single unit systems - functions can be defined generically, for arbitrary unit systems, using just the types of the dimensions. For an example, see Figure \ref{code:boost_units_generic}. Users can then define their own unit systems to interface with already existing library code.
+\verb/Boost.Unit/ is also independent of any single unit systems - functions can be defined generically, for arbitrary unit systems, using just the types of the dimensions. For an example, see Figure \ref{code:boost_units_generic}. Users can then define their own unit systems to interface with already existing library code.
 
 \begin{figure}
 \begin{minted}{c++}
@@ -280,14 +282,14 @@ work(quantity<unit<force_dimension,System>,Y> F,
 
 
 \subsection{Haskell - Dimensional}
-Haskell's Dimensional module \citep{Buckwalter06} completely relies on the type system and is the most elegant of the unit systems presented here. It relies on a single data type (Dimensional, see Figure \ref{code:haskell_dimensional}), parameterized with the exponents of different physical dimensions (Figure \ref{code:haskell_dim}). While only integer exponents are possible, rational exponents can be avoided in practice.
+Haskell's \verb/Dimensional/ module \citep{Buckwalter06} completely relies on the type system and is the most elegant of the unit systems presented here. It relies on a single data type (\verb/Dimensional/, see Figure \ref{code:haskell_dimensional}), parameterized with the exponents of different physical dimensions (Figure \ref{code:haskell_dim}). While only integer exponents are possible, rational exponents can be avoided in practice.
 
 \begin{figure}
 \begin{minted}{haskell}
 newtype (Variant v, Dims d)
       => Dimensional v d a = Dimensional a deriving (Show, Eq, Ord)
 \end{minted}
-\caption{Dimensional, the unit system's fundamental data type. Since 'a', representing the underlying number, is the only non-phantom type Dimensional is defined as a newtype and doesn't incur any runtime overhead. From \citep{Buckwalter06}.}
+\caption{Dimensional, the unit system's fundamental data type. Since 'a', representing the underlying number, is the only non-phantom type Dimensional is defined as a newtype and does not incur any runtime overhead. From \citep{Buckwalter06}.}
 \label{code:haskell_dimensional}
 \end{figure}
 
@@ -327,13 +329,38 @@ escapeVelocity m r = sqrt (two * g * m / r)
 \label{code:haskell_dimensional}
 \end{figure}
 
-
+\verb/Dimensional/ is restricted to the physical dimensions mentioned in Figure \ref{code:haskell_dim}. To add more dimensions, the fundamental data type would have to be changed - unfeasible in practice.
 
 
 \subsection{Scala}
-\citep{Hans12}
-\citep{Nygard09}
-\citep{McBeath08}
+
+Scala also has a long history of attempts to introduce Units of Measure. One of the oldest of such attempts is a now defunct compiler plugin \citep{Nygard09}. It allowed the programmer to introduce units using multiplication (\verb/400.0*m*m/) and caught common errors when combining units in invalid ways. Sadly, it's only compatible with Scala up to version 2.7.1 - as of 2013, the most recent version is 2.10.0.
+
+Another such example comes from \citep{McBeath08}, who implements a simple unit system based on Church Numerals. However, just as Haskell's \verb/Dimensional/ it is restricted to predefined units and does not allow the user to define her own units.
+
+Finally, there is \verb/ScalaQuantity/ \citep{Hans12}, which is closely modeled on Haskell's \verb/Dimensional/. Again, it does not allow user defined units and is otherwise so similar to \verb/Dimensional/ that I won't cover it in detail.
+
+Currently, there is no Units of Measure system in Scala that allows user defined units or provides for calculations without runtime overhead. This inspired me to create my own library, which I will cover in the following.
+
+\chapter{Objectives}
+
+no runtime overhead
+
+custom units
+
+static unit checking
+
+\chapter{Limitations}
+
+Measure can't be an instance of Numeric, since * returns a new type, and even + might do so
+
+\chapter{Acknowledgements}
+scala mailing list
+
+#scala on freenode
+
+scala user group vienna
+
 
 \singlespacing
 \bibliographystyle{dinat}

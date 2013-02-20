@@ -1,0 +1,10 @@
+project/target
+target
+macros/target
+thesis/thesis.bbl
+thesis/thesis.blg
+thesis/thesis.log
+thesis/thesis.out
+thesis/thesis.pdf
+thesis/thesis.toc
+thesis/thesis.aux

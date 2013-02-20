@@ -42,27 +42,27 @@ object Helpers {
 import Helpers._
 
 // AnyVal breaks type tags :/
-class MeasuredNumber[T: WeakTypeTag](val n: Int) {
-  override def toString = paramInfo
+class Measure[T](val n: Int) extends AnyVal {
+  override def toString = n.toString
 
-  def paramInfo(implicit tag: WeakTypeTag[MeasuredNumber[T]]) = {
+  /*def paramInfo(implicit tag: WeakTypeTag[Measure[T]]) = {
     val targs = tag.tpe match { case TypeRef(_, _, args) => args }
     val units = TypeParser.parse(targs(0).toString)
     val reducedUnits = reduce(units.simplify)
     //s"$n ${units.toString}, raw: ${targs(0)} - ${units.simplify} - $reducedUnits"
     s"$n $units"
-  }
+  }*/
 
-  def +[U](that: MeasuredNumber[U])(implicit tag: WeakTypeTag[T], tag2: WeakTypeTag[U]) =
-    macro MeasuredNumberImpl.addition_impl[T, U]
+  def +[U](that: Measure[U])(implicit tag: WeakTypeTag[T], tag2: WeakTypeTag[U]) =
+    macro MeasureImpl.addition_impl[T, U]
 
-  def *[U](that: MeasuredNumber[U])(implicit tag: WeakTypeTag[T], tag2: WeakTypeTag[U]) =
-    macro MeasuredNumberImpl.multiplication_impl[T, U]
+  def *[U](that: Measure[U])(implicit tag: WeakTypeTag[T], tag2: WeakTypeTag[U]) =
+    macro MeasureImpl.multiplication_impl[T, U]
 
-  override def equals(other: Any) = other match {
-    case that: MeasuredNumber[T] => this.toString == that.toString
+  /*override def equals(other: Any) = other match {
+    case that: Measure[T] => this.toString == that.toString
     case _ => false
-  }
+  }*/
 }
 
 
@@ -196,7 +196,7 @@ object TypeParser extends JavaTokenParsers {
   def id: Parser[String] = rep1sep(ident, ".") ^^ ( _.last )
 }
 
-object MeasuredNumberImpl {
+object MeasureImpl {
 
   def u(nEx: Int, unitEx: String) = macro u_impl
 
@@ -226,7 +226,7 @@ object MeasuredNumberImpl {
     //println(showRaw(parsedUnit))
 
     val stats = Apply(Select(New(AppliedTypeTree(
-      Ident(newTypeName("MeasuredNumber")),
+      Ident(newTypeName("Measure")),
       List( parsedUnit )
       )), nme.CONSTRUCTOR),
     List(Ident(newTermName(nID.toString))))
@@ -247,8 +247,8 @@ object MeasuredNumberImpl {
       Ident(freshName)
     }
 
-    val aID = _precompute(a, typeOf[MeasuredNumber[_]])
-    val bID = _precompute(b, typeOf[MeasuredNumber[_]])
+    val aID = _precompute(a, typeOf[Measure[_]])
+    val bID = _precompute(b, typeOf[Measure[_]])
     (evals, aID, bID)
   }
 
@@ -259,7 +259,7 @@ object MeasuredNumberImpl {
 
   def addition_impl[T: c.WeakTypeTag, U: c.WeakTypeTag]
     (c: Context)
-    (that: c.Expr[MeasuredNumber[U]])
+    (that: c.Expr[Measure[U]])
     (tag: c.Expr[WeakTypeTag[T]], tag2: c.Expr[WeakTypeTag[U]]): c.Expr[Any] = {
 
     import c.universe._
@@ -278,7 +278,7 @@ object MeasuredNumberImpl {
     val (evals, aID, bID) = precompute(c)(that.tree, c.prefix.tree)
 
     val stats = Apply(Select(New(AppliedTypeTree(
-      Ident(newTypeName("MeasuredNumber")),
+      Ident(newTypeName("Measure")),
       List( resultType )
       )), nme.CONSTRUCTOR),
       List(Apply(Select(
@@ -297,7 +297,7 @@ object MeasuredNumberImpl {
 
   def multiplication_impl[T: c.WeakTypeTag, U: c.WeakTypeTag]
     (c: Context)
-    (that: c.Expr[MeasuredNumber[U]])
+    (that: c.Expr[Measure[U]])
     (tag: c.Expr[WeakTypeTag[T]], tag2: c.Expr[WeakTypeTag[U]]): c.Expr[Any] = {
 
     import c.universe._
@@ -311,7 +311,7 @@ object MeasuredNumberImpl {
     val (evals, aID, bID) = precompute(c)(that.tree, c.prefix.tree)
 
     val stats = Apply(Select(New(AppliedTypeTree(
-      Ident(newTypeName("MeasuredNumber")),
+      Ident(newTypeName("Measure")),
       List( resultType )
       )), nme.CONSTRUCTOR),
       List(Apply(Select(
