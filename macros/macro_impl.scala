@@ -7,33 +7,21 @@ import scala.reflect.runtime.universe.{WeakTypeTag, TypeRef, TypeTag}
 
 
 object Helpers {
-  def reduce(l: List[Typename]): Typename = {
 
-    def eliminateInverted(l: List[Typename]): List[Typename] = l match {
-      case x :: xs => xs.indexOf(Inverted(x).reduce) match {
-        case -1 => x :: eliminateInverted(xs)
-        case n  => eliminateInverted(xs.slice(0, n) ++ xs.slice(n + 1, xs.length))
-      }
-      case Nil => Nil
-    }
+  def simplify(units: Seq[GeneralUnit]): Seq[GeneralUnit] = {
+    def reduceUnits(a: GeneralUnit, b: GeneralUnit) = SUnit(a.name, a.power + b.power)
 
-    val units = eliminateInverted(l)
+    val unitGroups = units.groupBy(_.name).toList
+    val unitList = for((_, units) <- unitGroups) yield units.reduce(reduceUnits)
+    unitList.sortBy(_.name)
+  }
 
-    val (mul, div) = units.partition(x => x match {
-      case Inverted(_) => false
-      case _ => true
-      })
-
-    def toMul(xs: List[Typename]): Typename = xs match {
-      case Nil => SimpleType("Unit")
-      case x :: Nil => x
-      case x :: y :: Nil => Times(x, y)
-      case x :: xs => Times(x, toMul(xs))
-    }
-
-    div match {
-      case Nil => toMul(mul)
-      case xs => Divide(toMul(mul), toMul(div.map { case Inverted(u) =>  u }))
+  def combine(units: Seq[GeneralUnit]): GeneralUnit = {
+    def makeTypes(next: GeneralUnit, sum: GeneralUnit) = CUnit(next, sum)
+    val unitList = simplify(units)
+    unitList match {
+      case unit :: Nil => unit
+      case xs => xs.reduceRight(makeTypes)
     }
   }
 }
@@ -41,7 +29,10 @@ object Helpers {
 
 import Helpers._
 
-// AnyVal breaks type tags :/
+
+// to make it independent of number type, use Numeric typeclass from
+// https://github.com/non/spire
+// the one from scala is too slow
 class Measure[T](val n: Int) extends AnyVal {
   override def toString = n.toString
 
@@ -65,106 +56,85 @@ class Measure[T](val n: Int) extends AnyVal {
   }*/
 }
 
+abstract class Dimension
+abstract class Pos1 extends Dimension
+abstract class Pos2 extends Dimension
+abstract class Pos3 extends Dimension
+abstract class Neg1 extends Dimension
+abstract class Neg2 extends Dimension
+abstract class Neg3 extends Dimension
+abstract class Zero extends Dimension
 
-
-abstract class Typename {
-  def simplify: List[Typename] = List()
+abstract class GeneralUnit {
+  def name: String
+  def power: Int
+  def invert: GeneralUnit
   def toTree(c: Context): c.universe.Tree =
     throw new Exception(s"invalid state, toTree called on $this")
 }
-
-case class Inverted(tpe: Typename) extends Typename {
-  def reduce = tpe match {
-    case Inverted(t) => t
-    case _ => this
-  }
-  override def equals(that: Any) = that match {
-    case Inverted(t) => t == tpe
-    case _ => false
-  }
-  override def simplify = tpe match {
-    case Times(a, b) => Inverted(a).simplify ++ Inverted(b).simplify
-    case Divide(a, b) => a.simplify ++ b.simplify
-    case Inverted(t) => t.simplify
-    case t => List(this)
-  }
-}
-
-case class SimpleType(name: String) extends Typename {
+case class SUnit[U, D <: Dimension](name: String, power: Int = 1) extends GeneralUnit {
   override def toString = name
-  override def simplify = List(this)
   override def equals(that: Any) = that match {
-    case SimpleType(n) => n == name
+    case SUnit(n, p) => n == name && p == power
     case _ => false
   }
-  override def toTree(c: Context): c.universe.Tree = c.universe.Ident(c.universe.newTypeName(name))
-}
-case class GenericType(name: String, param: Typename) extends Typename
-
-
-case class Times[T, U](param1: Typename, param2: Typename) extends Typename {
-  override def toString = s"$param1 * $param2"
-  override def simplify = param1.simplify ++ param2.simplify
-  override def toTree(c: Context): c.universe.Tree = c.universe.AppliedTypeTree(
-          c.universe.Ident(c.universe.newTypeName("Times")),
-          List(param1.toTree(c), param2.toTree(c)))
-}
-
-case class Divide[T, U](param1: Typename, param2: Typename) extends Typename {
-  override def toString = s"($param1) / ($param2)"
-  override def simplify = {
-    param1.simplify ++ param2.simplify.map(t => t match {
-      case Inverted(t) => t
-      case t => Inverted(t)
-      })
+  def dimName = power match {
+    case d if d > 0 => "Pos" + d
+    case 0 => "Zero"
+    case d => "Neg" + (-d)
   }
-  override def toTree(c: Context): c.universe.Tree = c.universe.AppliedTypeTree(
-          c.universe.Ident(c.universe.newTypeName("Divide")),
-          List(param1.toTree(c), param2.toTree(c)))
-}
 
+  override def toTree(c: Context): c.universe.Tree = c.universe.AppliedTypeTree(
+          c.universe.Ident(c.universe.newTypeName("SUnit")),
+          List(c.universe.Ident(c.universe.newTypeName(name)),
+               c.universe.Ident(c.universe.newTypeName(dimName))))
+
+  def invert = SUnit(name, -power)
+}
+case class CUnit[U, V](unit: GeneralUnit, next: GeneralUnit) extends GeneralUnit {
+  override def toTree(c: Context): c.universe.Tree = c.universe.AppliedTypeTree(
+          c.universe.Ident(c.universe.newTypeName("CUnit")),
+          List(unit.toTree(c), next.toTree(c)))
+   def invert: macroimpl.GeneralUnit = ???
+   def name: String = unit.name
+   def power: Int = unit.power
+}
 
 
 import scala.util.parsing.combinator._
 
 object UnitParser extends JavaTokenParsers with PackratParsers {
   def parse(in: String, c: Context) = parseAll(term, in) match {
-    case Success(r, _) => reduce(r.simplify).toTree(c)
-    //case _ => c.abort(c.enclosingPosition, s"unknown units and/or invalid format '$in'")
+    case Success(r, _) => combine(r).toTree(c)
+    case _ => c.abort(c.enclosingPosition, s"unknown units and/or invalid format '$in'")
   }
 
-  def toTimes(units: List[Typename]): Typename = units match {
-    case x :: Nil => x
-    case x :: y :: Nil => Times(x, y)
-    case x :: xs => Times(x, toTimes(xs))
-  }
-
-  def toTypenames(units: List[UnitParser.~[String, Typename]]): List[Typename] = units match {
+  def toTypenames(units: List[UnitParser.~[String, List[GeneralUnit]]]): List[GeneralUnit] = units match {
     case Nil => Nil
-    case ("*"~x) :: xs => x :: toTypenames(xs)
-    case (""~x) :: xs => x :: toTypenames(xs)
-    case ("/"~x) :: xs => Inverted(x) :: toTypenames(xs)
+    case ("*"~x) :: xs => x ++ toTypenames(xs)
+    case (""~x) :: xs => x ++ toTypenames(xs)
+    case ("/"~x) :: xs => x.map(_.invert) ++ toTypenames(xs)
   }
 
-  def power(t: Typename, n: Int): Typename = n match {
+  def power(t: List[GeneralUnit], n: Int): List[GeneralUnit] = n match {
     case 1 => t
-    case 0 => SimpleType("1")
-    case -1 => Inverted(t)
-    case n if n > 0 => Times(t, power(t, n - 1))
-    case _ => Times(Inverted(t), power(t, n + 1))
+    case 0 => List(SUnit("Unit"))
+    case -1 => t.map(_.invert)
+    case n if n > 0 => t ++ power(t, n - 1)
+    case _ => t.map(_.invert) ++ power(t, n + 1)
   }
 
-  lazy val term: PackratParser[Typename] =
+  lazy val term: PackratParser[List[GeneralUnit]] =
     longFactor~rep(("*"|"/"|"")~longFactor) ^^ {
       case t~Nil => t
-      case t~l => Times(t, toTimes(toTypenames(l)))
+      case t~l => t ++ toTypenames(l)
     }
-  lazy val longFactor: PackratParser[Typename] = (
+  lazy val longFactor: PackratParser[List[GeneralUnit]] = (
       shortFactor~"^"~wholeNumber ^^ { case t~"^"~n => power(t, n.toInt) }
     | shortFactor
     )
-  lazy val shortFactor: PackratParser[Typename] = (
-      unitname ^^ { case u => SimpleType(u) }
+  lazy val shortFactor: PackratParser[List[GeneralUnit]] = (
+      unitname ^^ { case u => List(SUnit(u)) }
     | "("~>term<~")"
     )
 
@@ -180,17 +150,24 @@ object UnitParser extends JavaTokenParsers with PackratParsers {
 
 object TypeParser extends JavaTokenParsers {
   def parse(in: String) = parseAll(typename, in) match {
-    case Success(r, _) => r
+    case Success(r, _) => simplify(r)
+  }
+
+  def dimValue(dim: String) = dim match {
+    case "Zero" => 0
+    case d if d.startsWith("Pos") => d.substring(3).toInt
+    case d => d.substring(3).toInt * -1
   }
 
   // grammar
-  def typename: Parser[Typename] = (
-      id~"["~typename~","~typename~"]" ^^ {
-        case "Times"~"["~t~","~u~"]" => Times(t, u)
-        case "Divide"~"["~t~","~u~"]" => Divide(t, u)
+  def typename: Parser[List[GeneralUnit]] = (
+      "macroimpl.CUnit["~typename~","~typename~"]" ^^ {
+        case "macroimpl.CUnit["~t~","~u~"]" => t ++ u
       }
-    | id~"["~typename~"]" ^^ { case n~"["~t~"]" => GenericType(n, t) }
-    | id ^^ (n => new SimpleType(n))
+    | "macroimpl.SUnit["~id~","~id~"]" ^^ {
+      case "macroimpl.SUnit["~u~","~d~"]" => List(SUnit(u, dimValue(d)))
+    }
+    | id~"["~typename~"]" ^^ { case n~"["~t~"]" => t }
     )
 
   def id: Parser[String] = rep1sep(ident, ".") ^^ ( _.last )
@@ -204,7 +181,7 @@ object MeasureImpl {
         (nEx: c.Expr[Int], unitEx: c.Expr[String]): c.Expr[Any] = {
     import c.universe._
 
-    println(showRaw(c))
+    //println(showRaw(c))
 
     val evals = ListBuffer[ValDef]()
 
@@ -252,10 +229,7 @@ object MeasureImpl {
     (evals, aID, bID)
   }
 
-  def parseType(c: Context)(tpe: c.Type) = TypeParser.parse(tpe.toString.replace("$", "")) match {
-      case GenericType(_, param) => reduce(param.simplify.sortBy(_.toString))
-    }
-
+  def parseType(c: Context)(tpe: c.Type) = TypeParser.parse(tpe.toString.replace("$", ""))
 
   def addition_impl[T: c.WeakTypeTag, U: c.WeakTypeTag]
     (c: Context)
@@ -264,16 +238,16 @@ object MeasureImpl {
 
     import c.universe._
 
-    println(tag.actualType.toString)
+    //println(tag.actualType.toString)
     val typeA = parseType(c)(tag.actualType)
     val typeB = parseType(c)(that.actualType)
 
     if(typeA != typeB)
       c.abort(c.enclosingPosition, s"type error, $typeA != $typeB")
 
-    val resultType = typeA.toTree(c)
+    val resultType = combine(typeA).toTree(c)
 
-    println(s"result type is $resultType")
+    //println(s"result type is $resultType")
 
     val (evals, aID, bID) = precompute(c)(that.tree, c.prefix.tree)
 
@@ -305,7 +279,7 @@ object MeasureImpl {
     val typeA = parseType(c)(tag.actualType)
     val typeB = parseType(c)(that.actualType)
 
-    val resultType = reduce(Times(typeA, typeB).simplify).toTree(c)
+    val resultType = combine(typeA ++ typeB).toTree(c)
 
 
     val (evals, aID, bID) = precompute(c)(that.tree, c.prefix.tree)

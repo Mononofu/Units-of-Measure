@@ -1,7 +1,7 @@
 package macros
 
 import macroimpl._
-import MeasuredNumberImpl.u
+import MeasureImpl.u
 import org.scalatest.FlatSpec
 import org.scalatest.matchers.ShouldMatchers
 
