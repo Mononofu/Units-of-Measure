@@ -5,9 +5,7 @@ import scala.reflect.macros.Context
 import collection.mutable.ListBuffer
 import scala.reflect.runtime.universe.{WeakTypeTag, TypeRef, TypeTag}
 
-
 object Helpers {
-
   def simplify(units: Seq[GeneralUnit]): Seq[GeneralUnit] = {
     def reduceUnits(a: GeneralUnit, b: GeneralUnit) = SUnit(a.name, a.power + b.power)
 
@@ -26,9 +24,7 @@ object Helpers {
   }
 }
 
-
 import Helpers._
-
 
 // to make it independent of number type, use Numeric typeclass from
 // https://github.com/non/spire
@@ -66,13 +62,13 @@ abstract class Neg3 extends Dimension
 abstract class Zero extends Dimension
 
 abstract class GeneralUnit {
-  def name: String
-  def power: Int
-  def invert: GeneralUnit
+  def name: String = throw new Exception(s"invalid state, name called on $this")
+  def power: Int = throw new Exception(s"invalid state, power called on $this")
+  def invert: GeneralUnit = throw new Exception(s"invalid state, invert called on $this")
   def toTree(c: Context): c.universe.Tree =
     throw new Exception(s"invalid state, toTree called on $this")
 }
-case class SUnit[U, D <: Dimension](name: String, power: Int = 1) extends GeneralUnit {
+case class SUnit[U, D <: Dimension](override val name: String, override val power: Int = 1) extends GeneralUnit {
   override def toString = name
   override def equals(that: Any) = that match {
     case SUnit(n, p) => n == name && p == power
@@ -89,15 +85,12 @@ case class SUnit[U, D <: Dimension](name: String, power: Int = 1) extends Genera
           List(c.universe.Ident(c.universe.newTypeName(name)),
                c.universe.Ident(c.universe.newTypeName(dimName))))
 
-  def invert = SUnit(name, -power)
+  override def invert = SUnit(name, -power)
 }
 case class CUnit[U, V](unit: GeneralUnit, next: GeneralUnit) extends GeneralUnit {
   override def toTree(c: Context): c.universe.Tree = c.universe.AppliedTypeTree(
           c.universe.Ident(c.universe.newTypeName("CUnit")),
           List(unit.toTree(c), next.toTree(c)))
-   def invert: macroimpl.GeneralUnit = ???
-   def name: String = unit.name
-   def power: Int = unit.power
 }
 
 
