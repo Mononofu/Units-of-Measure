@@ -2,16 +2,9 @@ package macros
 
 import macroimpl._
 import MeasureImpl.u
+import units._
 
 import scala.reflect.runtime.universe.{ WeakTypeTag, Expr }
-
-abstract class Meter
-abstract class Second
-abstract class Foot {
-  val perMeter = u(3, "ft/m")
-}
-
-
 
 object Main extends App {
 

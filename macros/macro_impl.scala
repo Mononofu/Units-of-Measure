@@ -26,6 +26,7 @@ object Helpers {
 
 import Helpers._
 
+
 // to make it independent of number type, use Numeric typeclass from
 // https://github.com/non/spire
 // the one from scala is too slow
@@ -195,6 +196,8 @@ object MeasureImpl {
     val parsedUnit = UnitParser.parse(unit, c)
     //println(showRaw(parsedUnit))
 
+    println(showRaw(c.topLevelDef(c.universe.newTypeName("units.Meter"))))
+
     val stats = Apply(Select(New(AppliedTypeTree(
       Ident(newTypeName("Measure")),
       List( parsedUnit )
@@ -231,7 +234,7 @@ object MeasureImpl {
 
     import c.universe._
 
-    //println(tag.actualType.toString)
+    println(tag.actualType.toString)
     val typeA = parseType(c)(tag.actualType)
     val typeB = parseType(c)(that.actualType)
 

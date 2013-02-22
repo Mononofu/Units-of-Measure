@@ -2,6 +2,8 @@ package macros
 
 import macroimpl._
 import MeasureImpl.u
+import units._
+
 
 abstract class Bench {
   def init(length: Int)
@@ -15,13 +17,13 @@ abstract class Bench {
     val timingsAdd = (1 to runs).map(_ => time { runAdd(length) } ).sorted.take(
       (runs * 0.95).toInt).drop((runs * 0.05).toInt)
     val perOpAdd = timingsAdd.sum * 1e6 / (timingsAdd.length * length)
-    println(s"$perOpAdd ns per addition, fastest run ${timingsAdd.min}, slowest ${timingsAdd.max}")
+    println(f"$perOpAdd%5.2f ns per addition,       fastest run ${timingsAdd.min}, slowest ${timingsAdd.max}")
 
     (1 to 10).foreach(_ => runMul(length))
     val timingsMul = (1 to runs).map(_ => time { runMul(length) } ).sorted.take(
       (runs * 0.95).toInt).drop((runs * 0.05).toInt)
     val perOpMul = timingsMul.sum * 1e6 / (timingsMul.length * length)
-    println(s"$perOpMul ns per multiplication, fastest run ${timingsMul.min}, slowest ${timingsMul.max}")
+    println(f"$perOpMul%5.2f ns per multiplication, fastest run ${timingsMul.min}, slowest ${timingsMul.max}")
   }
 
   def time(f: => Unit): Long = {

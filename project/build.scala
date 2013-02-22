@@ -1,10 +1,45 @@
 import sbt._
 import Keys._
 
-object HelloBuild extends Build {
-    lazy val root = Project(id = "macros",
-                            base = file(".")) dependsOn(macroImpl)
+object BuildSettings {
+  val buildSettings = Defaults.defaultSettings ++ Seq(
+    organization := "org.scalamacros",
+    version := "1.0.0",
+    scalacOptions ++= Seq(),
+    scalaVersion := "2.11.0-SNAPSHOT",
+    scalaOrganization := "org.scala-lang.macro-paradise",
+    resolvers += Resolver.sonatypeRepo("snapshots"),
+    libraryDependencies +=  "org.scalatest" % "scalatest_2.10" % "1.9.1" % "test"
 
-    lazy val macroImpl = Project(id = "macroimpl",
-                           base = file("macros"))
+
+  )
+}
+
+object MyBuild extends Build {
+  import BuildSettings._
+
+  lazy val root: Project = Project(
+    "root",
+    file("core"),
+    settings = buildSettings
+  ) aggregate(macros, core)
+
+  lazy val macros: Project = Project(
+    "macros",
+    file("macros"),
+    settings = buildSettings ++ Seq(
+      libraryDependencies <+= (scalaVersion)("org.scala-lang.macro-paradise" % "scala-reflect" % _))
+  )
+
+  lazy val units: Project = Project(
+    "units",
+    file("units"),
+    settings = buildSettings
+  ) dependsOn(macros)
+
+  lazy val core: Project = Project(
+    "core",
+    file("core"),
+    settings = buildSettings
+  ) dependsOn(units)
 }
