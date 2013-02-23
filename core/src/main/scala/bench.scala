@@ -2,7 +2,7 @@ package macros
 
 import macroimpl._
 import MeasureImpl.u
-import units._
+import units.Units._
 
 
 abstract class Bench {

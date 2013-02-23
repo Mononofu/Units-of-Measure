@@ -1,9 +1,9 @@
 package units
 
 import macroimpl._
-import CreateUnitMacros.createUnit
+import CreateUnitMacros.MyUnit
 
 object Units {
-  createUnit("Meter", "m")
-  createUnit("Second", "s")
+  trait Meter extends MyUnit("Meter", "m")
+  trait Second extends MyUnit("Second", "s")
 }

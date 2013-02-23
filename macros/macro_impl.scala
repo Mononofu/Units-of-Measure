@@ -196,7 +196,7 @@ object MeasureImpl {
     val parsedUnit = UnitParser.parse(unit, c)
     //println(showRaw(parsedUnit))
 
-    println(showRaw(c.topLevelDef(c.universe.newTypeName("units.Meter"))))
+    //println(c.mirror.staticClass("Meter"))
 
     val stats = Apply(Select(New(AppliedTypeTree(
       Ident(newTypeName("Measure")),
@@ -234,7 +234,7 @@ object MeasureImpl {
 
     import c.universe._
 
-    println(tag.actualType.toString)
+    //println(tag.actualType.toString)
     val typeA = parseType(c)(tag.actualType)
     val typeB = parseType(c)(that.actualType)
 

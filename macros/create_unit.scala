@@ -6,19 +6,26 @@ import scala.reflect.macros.Context
 
 object CreateUnitMacros {
 
-  def createImpl(c: Context)(name: c.Expr[String], short: c.Expr[String]): c.Expr[Any] = {
+  def createImpl(c: Context)(long: c.Expr[String], short: c.Expr[String]): c.Tree = {
     import c.universe._
 
-    val className = name match {
-      case Expr(Literal(Constant(s))) => c.universe.newTypeName(s.toString)
+    def extractString(e: c.Expr[String]) = e match {
+      case Expr(Literal(Constant(s))) => s.toString
       case _ => c.abort(c.enclosingPosition, "unit name has to be a constant string")
     }
 
+    val Template(_, _, existingCode) = c.enclosingTemplate
+
+    val longName = extractString(long)
+    val shortName = extractString(short)
+
     val packageName = c.enclosingPackage.pid.toString
+    val className = newTypeName(s"Translate$shortName")
+    println(className)
     c.introduceTopLevel(packageName, q"class $className")
 
-    c.Expr(Block(List(), Literal(Constant())))
+    Template(Nil, emptyValDef, existingCode )
   }
 
-  def createUnit(name: String, short: String) = macro createImpl
+  type MyUnit(long: String, short: String) = macro createImpl
 }
