@@ -22,7 +22,7 @@ object Main extends App {
   val g = new Measure[CUnit[SUnit[Meter, Pos1], SUnit[Second, Pos2]]](10)
   //val f = u(10, "m/s")
 
-  val test: Measure[CUnit[SUnit[Meter, Pos1], SUnit[Second, Pos1]]] = u(10, "m*s")
+  val test: u("m*s") = u(10, "m*s")
 
 
   println("\n==== raw numbers")
@@ -31,7 +31,7 @@ object Main extends App {
   println("u(10, 'm*s/s'): " + u(10, "m*s/s"))
 
   println("\n==== addition")
-  val tmp: Measure[SUnit[Meter, Pos1]] = a + b
+  val tmp: u("m") = a + b
   println(s"$a + $b: " + (a + b))
   println("ugly manually defined unit is reduced too:")
   println(s"$g + $f: " + (g + f) )
@@ -54,7 +54,7 @@ object Main extends App {
   println(s"$d + ($b * $c): ${d + (b * c)}")
   println(s"$d + ($b * $c): ${d + (b * c)}")
 
-  val result: Measure[CUnit[SUnit[Meter, Pos1], SUnit[Second, Pos1]]] = b * c
+  val result: u("m*s") = b * c
 
   // type error
   // println("e + (b * c): " + (e + (b * c)))

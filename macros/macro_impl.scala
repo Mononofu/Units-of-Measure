@@ -181,6 +181,8 @@ object MeasureImpl {
 
   def u(nEx: Int, unitEx: String) = macro u_impl
 
+  type u(unitEx: String) = macro u_unit_impl
+
   def u_impl(c: Context)
         (nEx: c.Expr[Int], unitEx: c.Expr[String]): c.Expr[Any] = {
     import c.universe._
@@ -234,6 +236,22 @@ object MeasureImpl {
     //println(showRaw(stats))
 
     c.Expr(Block(evals.toList, stats))
+  }
+
+  def u_unit_impl(c: Context)(unitEx: c.Expr[String]): c.Tree = {
+    import c.universe._
+
+    val unit = unitEx match {
+      case Expr(Literal(Constant(s))) => s.toString
+      case _ => c.abort(c.enclosingPosition, "unit has to be a constant string")
+    }
+
+    val parsedUnit = UnitParser[c.type](c).parse(unit)
+
+    AppliedTypeTree(
+      Ident(newTypeName("Measure")),
+      List( parsedUnit )
+      )
   }
 
   def precompute(c: Context)(a: c.Tree, b: c.Tree) = {
