@@ -199,14 +199,18 @@ object MeasureImpl {
     //println(parsedUnit)
 
     //val unitSymbol = c.mirror.staticClass(packageName + ".Translate$m")
+
+    // uncomment line 204 to 215 to see that 'annotations' always returns the
+    // empty list, even when annotations are present.
     /*val unitSymbol = c.mirror.staticClass("macroimpl.TranslateF")
     println(showRaw(unitSymbol))
     println(unitSymbol.asClass.annotations)
 
     val unitPackage = c.mirror.staticPackage(packageName)
-    println(unitPackage.typeSignature.declarations)*/
+    println(unitPackage.typeSignature.declarations)
 
-    /*println("Annotations: ")
+    val unitClass = java.lang.Class.forName("macroimpl.TranslateF")
+    println("Annotations: ")
     for(a <- unitClass.getAnnotations()) {
       println(a)
     }*/

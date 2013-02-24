@@ -26,11 +26,8 @@ object CreateUnitMacros {
     val longName = extractString(long)
     val shortName = extractString(short)
 
-
     val className = newTypeName(s"Translate$$$shortName")
-    println(className)
-    val unitLookup = q"@macroimpl.LongName($longName) class $className extends macroimpl.UnitName($longName)"
-    println(showRaw(unitLookup))
+    val unitLookup = q"class $className extends macroimpl.UnitName($longName)"
     c.introduceTopLevel(packageName, unitLookup)
 
     Template(Nil, emptyValDef, existingCode )
