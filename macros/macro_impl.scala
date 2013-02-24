@@ -99,13 +99,13 @@ case class CUnit[U, V](unit: GeneralUnit, next: GeneralUnit) extends GeneralUnit
 
 import scala.util.parsing.combinator._
 
-object UnitParser extends JavaTokenParsers with PackratParsers {
-  def parse(in: String, c: Context) = parseAll(term, in) match {
+case class UnitParser[C <: Context](c: C) extends JavaTokenParsers with PackratParsers {
+  def parse(in: String) = parseAll(term, in) match {
     case Success(r, _) => combine(r).toTree(c)
     case _ => c.abort(c.enclosingPosition, s"unknown units and/or invalid format '$in'")
   }
 
-  def toTypenames(units: List[UnitParser.~[String, List[GeneralUnit]]]): List[GeneralUnit] = units match {
+  def toTypenames(units: List[~[String, List[GeneralUnit]]]): List[GeneralUnit] = units match {
     case Nil => Nil
     case ("*"~x) :: xs => x ++ toTypenames(xs)
     case (""~x) :: xs => x ++ toTypenames(xs)
@@ -137,9 +137,17 @@ object UnitParser extends JavaTokenParsers with PackratParsers {
   lazy val unitname: PackratParser[String] = (
       "1" ^^ { _ => "Unit" }
     | "[a-z]+".r ^^ { short =>
-        val unitClass = java.lang.Class.forName(packageName + ".Translate$" + short)
-        val unitInstance = unitClass.newInstance().asInstanceOf[UnitName]
-        unitInstance.long
+        val unitSymbol = c.mirror.staticClass(packageName + ".Translate$" + short)
+        val dummy = unitSymbol.typeSignature
+        val annotations = unitSymbol.asClass.annotations
+        annotations.find(a => a.tpe == c.universe.typeOf[LongName]) match {
+          case None => c.abort(c.enclosingPosition, s"unknown unit '$short'")
+          case Some(a) => a.scalaArgs.head match {
+            case c.universe.Literal(c.universe.Constant(longName)) => longName match {
+              case s: String => s
+            }
+          }
+        }
       }
     )
 }
@@ -194,19 +202,15 @@ object MeasureImpl {
       case _ => c.abort(c.enclosingPosition, "unit has to be a constant string")
     }
 
-    //println(unit)
-    val parsedUnit = UnitParser.parse(unit, c)
-    //println(parsedUnit)
+    val parsedUnit = UnitParser[c.type](c).parse(unit)
 
     //val unitSymbol = c.mirror.staticClass(packageName + ".Translate$m")
 
     // uncomment line 205 to 216 to see that 'annotations' always returns the
     // empty list, even when annotations are present.
-    /*val unitSymbol = c.mirror.staticClass("macroimpl.TranslateF")
-    println(showRaw(unitSymbol))
-    println(unitSymbol.asClass.annotations)
+    //val unitSymbol = c.mirror.staticClass("macroimpl.TranslateF")
 
-    val unitPackage = c.mirror.staticPackage(packageName)
+    /*val unitPackage = c.mirror.staticPackage(packageName)
     println(unitPackage.typeSignature.declarations)
 
     val unitClass = java.lang.Class.forName("macroimpl.TranslateF")
