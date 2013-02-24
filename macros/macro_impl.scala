@@ -200,7 +200,7 @@ object MeasureImpl {
 
     //val unitSymbol = c.mirror.staticClass(packageName + ".Translate$m")
 
-    // uncomment line 204 to 215 to see that 'annotations' always returns the
+    // uncomment line 205 to 216 to see that 'annotations' always returns the
     // empty list, even when annotations are present.
     /*val unitSymbol = c.mirror.staticClass("macroimpl.TranslateF")
     println(showRaw(unitSymbol))
