@@ -6,6 +6,8 @@ import collection.mutable.ListBuffer
 import scala.reflect.runtime.universe.{WeakTypeTag, TypeRef, TypeTag}
 
 object Helpers {
+  val packageName = "$$units$$"
+
   def simplify(units: Seq[GeneralUnit]): Seq[GeneralUnit] = {
     def reduceUnits(a: GeneralUnit, b: GeneralUnit) = SUnit(a.name, a.power + b.power)
 
@@ -133,12 +135,12 @@ object UnitParser extends JavaTokenParsers with PackratParsers {
     )
 
   lazy val unitname: PackratParser[String] = (
-      "m" ^^ { _ => "Meter" }
-    | "s" ^^ { _ => "Second" }
-    | "c" ^^ { _ => "Gram" }
-    | "w" ^^ { _ => "Watt" }
-    | "ft" ^^ { _ => "Foot" }
-    | "1" ^^ { _ => "Unit" }
+      "1" ^^ { _ => "Unit" }
+    | "[a-z]+".r ^^ { short =>
+        val unitClass = java.lang.Class.forName(packageName + ".Translate$" + short)
+        val unitInstance = unitClass.newInstance().asInstanceOf[UnitName]
+        unitInstance.long
+      }
     )
 }
 
@@ -194,9 +196,25 @@ object MeasureImpl {
 
     //println(unit)
     val parsedUnit = UnitParser.parse(unit, c)
-    //println(showRaw(parsedUnit))
+    //println(parsedUnit)
 
-    //println(c.mirror.staticClass("Meter"))
+    //val unitSymbol = c.mirror.staticClass(packageName + ".Translate$m")
+    /*val unitSymbol = c.mirror.staticClass("macroimpl.TranslateF")
+    println(showRaw(unitSymbol))
+    println(unitSymbol.asClass.annotations)
+
+    val unitPackage = c.mirror.staticPackage(packageName)
+    println(unitPackage.typeSignature.declarations)*/
+
+    /*println("Annotations: ")
+    for(a <- unitClass.getAnnotations()) {
+      println(a)
+    }*/
+
+    //val classSymbol = ru.ClassSymbol.newClassSymbol("$$units$$.Translate$m")
+    //val unitClass = ru.runtimeMirror(getClass.getClassLoader).reflectClass("$$units$$.Translate$m")
+    //println(unitClass)
+
 
     val stats = Apply(Select(New(AppliedTypeTree(
       Ident(newTypeName("Measure")),
