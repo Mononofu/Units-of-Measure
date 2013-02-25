@@ -35,162 +35,43 @@ import Helpers._
 class Measure[T](val n: Int) extends AnyVal {
   override def toString = n.toString
 
-  /*def paramInfo(implicit tag: WeakTypeTag[Measure[T]]) = {
-    val targs = tag.tpe match { case TypeRef(_, _, args) => args }
-    val units = TypeParser.parse(targs(0).toString)
-    val reducedUnits = reduce(units.simplify)
-    //s"$n ${units.toString}, raw: ${targs(0)} - ${units.simplify} - $reducedUnits"
-    s"$n $units"
-  }*/
-
   def +[U](that: Measure[U])(implicit tag: WeakTypeTag[T], tag2: WeakTypeTag[U]) =
     macro MeasureImpl.addition_impl[T, U]
 
   def *[U](that: Measure[U])(implicit tag: WeakTypeTag[T], tag2: WeakTypeTag[U]) =
     macro MeasureImpl.multiplication_impl[T, U]
 
-  def toInt = n
+  def toInt = n.toInt
+  def toDouble = n.toDouble
+  def toFloat = n.toFloat
 
-  /*override def equals(other: Any) = other match {
-    case that: Measure[T] => this.toString == that.toString
-    case _ => false
-  }*/
-}
+  def as(unitEx: String)(implicit tag: WeakTypeTag[T]) = macro MeasureImpl.as_impl[T]
 
-abstract class Dimension
-abstract class Pos1 extends Dimension
-abstract class Pos2 extends Dimension
-abstract class Pos3 extends Dimension
-abstract class Neg1 extends Dimension
-abstract class Neg2 extends Dimension
-abstract class Neg3 extends Dimension
-abstract class Zero extends Dimension
-
-abstract class GeneralUnit {
-  def name: String = throw new Exception(s"invalid state, name called on $this")
-  def power: Int = throw new Exception(s"invalid state, power called on $this")
-  def invert: GeneralUnit = throw new Exception(s"invalid state, invert called on $this")
-  def toTree(c: Context): c.universe.Tree =
-    throw new Exception(s"invalid state, toTree called on $this")
-}
-case class SUnit[U, D <: Dimension](override val name: String, override val power: Int = 1) extends GeneralUnit {
-  override def toString = name
-  override def equals(that: Any) = that match {
-    case SUnit(n, p) => n == name && p == power
-    case _ => false
-  }
-  def dimName = power match {
-    case d if d > 0 => "Pos" + d
-    case 0 => "Zero"
-    case d => "Neg" + (-d)
-  }
-
-  override def toTree(c: Context): c.universe.Tree = c.universe.AppliedTypeTree(
-          c.universe.Ident(c.universe.newTypeName("SUnit")),
-          List(c.universe.Ident(c.universe.newTypeName(name)),
-               c.universe.Ident(c.universe.newTypeName(dimName))))
-
-  override def invert = SUnit(name, -power)
-}
-case class CUnit[U, V](unit: GeneralUnit, next: GeneralUnit) extends GeneralUnit {
-  override def toTree(c: Context): c.universe.Tree = c.universe.AppliedTypeTree(
-          c.universe.Ident(c.universe.newTypeName("CUnit")),
-          List(unit.toTree(c), next.toTree(c)))
+  def unit(implicit tag: WeakTypeTag[T]) = macro MeasureImpl.get_unit_impl[T]
 }
 
 
-import scala.util.parsing.combinator._
 
-case class UnitParser[C <: Context](c: C) extends JavaTokenParsers with PackratParsers {
-  def parse(in: String) = parseAll(term, in) match {
-    case Success(r, _) => combine(r).toTree(c)
-    case _ => c.abort(c.enclosingPosition, s"unknown units and/or invalid format '$in'")
-  }
-
-  def toTypenames(units: List[~[String, List[GeneralUnit]]]): List[GeneralUnit] = units match {
-    case Nil => Nil
-    case ("*"~x) :: xs => x ++ toTypenames(xs)
-    case (""~x) :: xs => x ++ toTypenames(xs)
-    case ("/"~x) :: xs => x.map(_.invert) ++ toTypenames(xs)
-  }
-
-  def power(t: List[GeneralUnit], n: Int): List[GeneralUnit] = n match {
-    case 1 => t
-    case 0 => List(SUnit("Unit"))
-    case -1 => t.map(_.invert)
-    case n if n > 0 => t ++ power(t, n - 1)
-    case _ => t.map(_.invert) ++ power(t, n + 1)
-  }
-
-  lazy val term: PackratParser[List[GeneralUnit]] =
-    longFactor~rep(("*"|"/"|"")~longFactor) ^^ {
-      case t~Nil => t
-      case t~l => t ++ toTypenames(l)
-    }
-  lazy val longFactor: PackratParser[List[GeneralUnit]] = (
-      shortFactor~"^"~wholeNumber ^^ { case t~"^"~n => power(t, n.toInt) }
-    | shortFactor
-    )
-  lazy val shortFactor: PackratParser[List[GeneralUnit]] = (
-      unitname ^^ { case u => List(SUnit(u)) }
-    | "("~>term<~")"
-    )
-
-  lazy val unitname: PackratParser[String] = (
-      "1" ^^ { _ => "Unit" }
-    | "[a-z]+".r ^^ { short =>
-        val unitSymbol = c.mirror.staticClass(packageName + ".Translate$" + short)
-        val dummy = unitSymbol.typeSignature
-        val annotations = unitSymbol.asClass.annotations
-        annotations.find(a => a.tpe == c.universe.typeOf[LongName]) match {
-          case None => c.abort(c.enclosingPosition, s"unknown unit '$short'")
-          case Some(a) => a.scalaArgs.head match {
-            case c.universe.Literal(c.universe.Constant(longName)) => longName match {
-              case s: String => s
-            }
-          }
-        }
-      }
-    )
-}
-
-object TypeParser extends JavaTokenParsers {
-  def parse(in: String) = parseAll(typename, in) match {
-    case Success(r, _) => simplify(r)
-  }
-
-  def dimValue(dim: String) = dim match {
-    case "Zero" => 0
-    case d if d.startsWith("Pos") => d.substring(3).toInt
-    case d => d.substring(3).toInt * -1
-  }
-
-  // grammar
-  def typename: Parser[List[GeneralUnit]] = (
-      "macroimpl.CUnit["~typename~","~typename~"]" ^^ {
-        case "macroimpl.CUnit["~t~","~u~"]" => t ++ u
-      }
-    | "macroimpl.SUnit["~id~","~id~"]" ^^ {
-      case "macroimpl.SUnit["~u~","~d~"]" => List(SUnit(u, dimValue(d)))
-    }
-    | id~"["~typename~"]" ^^ { case n~"["~t~"]" => t }
-    )
-
-  def id: Parser[String] = rep1sep(ident, ".") ^^ ( _.last )
-}
 
 object MeasureImpl {
-
   def u(nEx: Int, unitEx: String) = macro u_impl
 
   type u(unitEx: String) = macro u_unit_impl
 
+  def compute_unit(c: Context)(unitEx: c.Expr[String]) = {
+    import c.universe._
+
+    val unit = unitEx match {
+      case Expr(Literal(Constant(s))) => s.toString
+      case _ => c.abort(c.enclosingPosition, "unit has to be a constant string")
+    }
+
+    UnitParser[c.type](c).parse(unit)
+  }
+
   def u_impl(c: Context)
         (nEx: c.Expr[Int], unitEx: c.Expr[String]): c.Expr[Any] = {
     import c.universe._
-
-    //println(showRaw(c))
-
     val evals = ListBuffer[ValDef]()
 
     def _precompute(value: Tree, tpe: Type): Ident = {
@@ -200,33 +81,7 @@ object MeasureImpl {
     }
 
     val nID = _precompute(nEx.tree, typeOf[Int])
-
-    val unit = unitEx match {
-      case Expr(Literal(Constant(s))) => s.toString
-      case _ => c.abort(c.enclosingPosition, "unit has to be a constant string")
-    }
-
-    val parsedUnit = UnitParser[c.type](c).parse(unit)
-
-    //val unitSymbol = c.mirror.staticClass(packageName + ".Translate$m")
-
-    // uncomment line 205 to 216 to see that 'annotations' always returns the
-    // empty list, even when annotations are present.
-    //val unitSymbol = c.mirror.staticClass("macroimpl.TranslateF")
-
-    /*val unitPackage = c.mirror.staticPackage(packageName)
-    println(unitPackage.typeSignature.declarations)
-
-    val unitClass = java.lang.Class.forName("macroimpl.TranslateF")
-    println("Annotations: ")
-    for(a <- unitClass.getAnnotations()) {
-      println(a)
-    }*/
-
-    //val classSymbol = ru.ClassSymbol.newClassSymbol("$$units$$.Translate$m")
-    //val unitClass = ru.runtimeMirror(getClass.getClassLoader).reflectClass("$$units$$.Translate$m")
-    //println(unitClass)
-
+    val parsedUnit = compute_unit(c)(unitEx)
 
     val stats = Apply(Select(New(AppliedTypeTree(
       Ident(newTypeName("Measure")),
@@ -234,26 +89,49 @@ object MeasureImpl {
       )), nme.CONSTRUCTOR),
     List(Ident(newTermName(nID.toString))))
 
-    //println(stats)
-    //println(showRaw(stats))
-
     c.Expr(Block(evals.toList, stats))
   }
 
   def u_unit_impl(c: Context)(unitEx: c.Expr[String]): c.Tree = {
+    val parsedUnit = compute_unit(c)(unitEx)
+    import c.universe._
+    AppliedTypeTree( Ident(newTypeName("Measure")), List( parsedUnit ) )
+  }
+
+  def as_impl[T: c.WeakTypeTag]
+    (c: Context)(unitEx: c.Expr[String])(tag: c.Expr[WeakTypeTag[T]]): c.Expr[Any] = {
+    /* TODO: add conversion */
+    val parsedUnit = compute_unit(c)(unitEx)
     import c.universe._
 
-    val unit = unitEx match {
-      case Expr(Literal(Constant(s))) => s.toString
-      case _ => c.abort(c.enclosingPosition, "unit has to be a constant string")
+    val evals = ListBuffer[ValDef]()
+
+    def _precompute(value: Tree, tpe: Type): Ident = {
+      val freshName = newTermName(c.fresh("eval$"))
+      evals += ValDef(Modifiers(), freshName, TypeTree(tpe), value)
+      Ident(freshName)
     }
 
-    val parsedUnit = UnitParser[c.type](c).parse(unit)
+    val nID = _precompute(c.prefix.tree, typeOf[Measure[_]])
 
-    AppliedTypeTree(
+    val stats = Apply(Select(New(AppliedTypeTree(
       Ident(newTypeName("Measure")),
       List( parsedUnit )
-      )
+      )), nme.CONSTRUCTOR),
+    List(Select(
+      Ident(newTermName(nID.toString)),
+      newTermName("n"))))
+
+    c.Expr(Block(evals.toList, stats))
+  }
+
+  def get_unit_impl[T: c.WeakTypeTag](c: Context)
+    (tag: c.Expr[WeakTypeTag[T]]): c.Expr[String] = {
+
+    val typeA = parseType(c)(tag.actualType)
+    val unit = simplify(typeA).map(u => s"${u.name}^${u.power}").mkString
+    import c.universe._
+    c.Expr[String](Literal(Constant(unit)))
   }
 
   def precompute(c: Context)(a: c.Tree, b: c.Tree) = {
@@ -280,7 +158,6 @@ object MeasureImpl {
 
     import c.universe._
 
-    //println(tag.actualType.toString)
     val typeA = parseType(c)(tag.actualType)
     val typeB = parseType(c)(that.actualType)
 
@@ -288,8 +165,6 @@ object MeasureImpl {
       c.abort(c.enclosingPosition, s"type error, $typeA != $typeB")
 
     val resultType = combine(typeA).toTree(c)
-
-    //println(s"result type is $resultType")
 
     val (evals, aID, bID) = precompute(c)(that.tree, c.prefix.tree)
 

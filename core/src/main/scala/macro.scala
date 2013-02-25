@@ -56,6 +56,9 @@ object Main extends App {
 
   val result: u("m*s") = b * c
 
+  println("\n==== access units with macro trickery")
+  println(s"${d.unit}")
+
   // type error
   // println("e + (b * c): " + (e + (b * c)))
   //
