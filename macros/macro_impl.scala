@@ -49,6 +49,8 @@ class Measure[T](val n: Int) extends AnyVal {
   def *[U](that: Measure[U])(implicit tag: WeakTypeTag[T], tag2: WeakTypeTag[U]) =
     macro MeasureImpl.multiplication_impl[T, U]
 
+  def toInt = n
+
   /*override def equals(other: Any) = other match {
     case that: Measure[T] => this.toString == that.toString
     case _ => false
