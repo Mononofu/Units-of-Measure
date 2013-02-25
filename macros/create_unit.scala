@@ -4,6 +4,7 @@ import language.experimental.macros
 import scala.reflect.macros.Context
 
 case class LongName(n: String) extends scala.annotation.StaticAnnotation
+case class ShortName(n: String) extends scala.annotation.StaticAnnotation
 
 @LongName("MyUnit") class TranslateF
 
@@ -23,9 +24,13 @@ object CreateUnitMacros {
     val longName = extractString(long)
     val shortName = extractString(short)
 
-    val className = newTypeName(s"Translate$$$shortName")
-    val unitLookup = q"@macroimpl.LongName(n = $longName) class $className"
-    c.introduceTopLevel(packageName, unitLookup)
+    val classNameShort = newTypeName(s"Translate$$$shortName")
+    val unitLookupShort = q"@macroimpl.LongName(n = $longName) class $classNameShort"
+    c.introduceTopLevel(packageName, unitLookupShort)
+
+    val classNameLong = newTypeName(s"Translate$$$longName")
+    val unitLookupLong = q"@macroimpl.ShortName(n = $shortName) class $classNameLong"
+    c.introduceTopLevel(packageName, unitLookupLong)
 
     Template(Nil, emptyValDef, existingCode )
   }

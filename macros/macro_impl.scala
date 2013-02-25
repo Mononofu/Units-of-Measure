@@ -13,7 +13,7 @@ object Helpers {
 
     val unitGroups = units.groupBy(_.name).toList
     val unitList = for((_, units) <- unitGroups) yield units.reduce(reduceUnits)
-    unitList.sortBy(_.name)
+    unitList.filter(_.power != 0).sortBy(_.name)
   }
 
   def combine(units: Seq[GeneralUnit]): GeneralUnit = {
@@ -128,8 +128,34 @@ object MeasureImpl {
   def get_unit_impl[T: c.WeakTypeTag](c: Context)
     (tag: c.Expr[WeakTypeTag[T]]): c.Expr[String] = {
 
+    def prettyUnit(u: GeneralUnit) = {
+      val unitSymbol = c.mirror.staticClass(packageName + ".Translate$" + u.name)
+      val dummy = unitSymbol.typeSignature
+      val annotations = unitSymbol.asClass.annotations
+      val short = annotations.find(a => a.tpe == c.universe.typeOf[ShortName]) match {
+        case None => c.abort(c.enclosingPosition, s"unknown unit '${u.name}'")
+        case Some(a) => a.scalaArgs.head match {
+          case c.universe.Literal(c.universe.Constant(shortName)) => shortName match {
+            case s: String => s
+          }
+        }
+      }
+      if(u.power == 1) short
+      else s"$short^${Math.abs(u.power)}"
+    }
+
     val typeA = parseType(c)(tag.actualType)
-    val unit = simplify(typeA).map(u => s"${u.name}^${u.power}").mkString
+    val (posUnits, negUnits) = simplify(typeA).partition(u => u.power > 0)
+    val posUnitsString = posUnits match {
+      case Nil => "1"
+      case l => l.map(prettyUnit).mkString("*")
+    }
+    val negUnitsString = negUnits match {
+      case Nil => ""
+      case l => " / " + negUnits.map(prettyUnit).mkString
+    }
+    val unit = posUnitsString + negUnitsString
+
     import c.universe._
     c.Expr[String](Literal(Constant(unit)))
   }
