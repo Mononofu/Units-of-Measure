@@ -43,17 +43,7 @@ case class UnitParser[C <: Context](c: C) extends JavaTokenParsers with PackratP
   lazy val unitname: PackratParser[String] = (
       "1" ^^ { _ => "Unit" }
     | "[a-z]+".r ^^ { short =>
-        val unitSymbol = c.mirror.staticClass(packageName + ".Translate$" + short)
-        val dummy = unitSymbol.typeSignature
-        val annotations = unitSymbol.asClass.annotations
-        annotations.find(a => a.tpe == c.universe.typeOf[LongName]) match {
-          case None => c.abort(c.enclosingPosition, s"unknown unit '$short'")
-          case Some(a) => a.scalaArgs.head match {
-            case c.universe.Literal(c.universe.Constant(longName)) => longName match {
-              case s: String => s
-            }
-          }
-        }
+        lookupShortUnit(c, short)
       }
     )
 }

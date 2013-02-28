@@ -3,7 +3,6 @@ package macros
 import macroimpl._
 import MeasureImpl.u
 import units._
-import Units._
 
 import scala.reflect.runtime.universe.{ WeakTypeTag, Expr }
 

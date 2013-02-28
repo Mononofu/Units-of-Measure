@@ -17,11 +17,11 @@ object TypeParser extends JavaTokenParsers {
 
   // grammar
   def typename: Parser[List[GeneralUnit]] = (
-      "macroimpl.CUnit["~typename~","~typename~"]" ^^ {
-        case "macroimpl.CUnit["~t~","~u~"]" => t ++ u
+      "CUnit["~typename~","~typename~"]" ^^ {
+        case "CUnit["~t~","~u~"]" => t ++ u
       }
-    | "macroimpl.SUnit["~id~","~id~"]" ^^ {
-      case "macroimpl.SUnit["~u~","~d~"]" => List(SUnit(u, dimValue(d)))
+    | "SUnit["~id~","~id~"]" ^^ {
+      case "SUnit["~u~","~d~"]" => List(SUnit(u, dimValue(d)))
     }
     | id~"["~typename~"]" ^^ { case n~"["~t~"]" => t }
     )
