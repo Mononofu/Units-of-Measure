@@ -51,14 +51,13 @@ object Helpers {
     }
   }
 
-  def lookupBaseUnit[C <: Context](c: C, short: String): (String, Double) = {
+  def lookupBaseUnit[C <: Context](c: C, short: String): Option[(String, Double)] = {
     val unitSymbol = c.mirror.staticClass(packageName + ".Translate$" + short)
     val dummy = unitSymbol.typeSignature
     val annotations = unitSymbol.asClass.annotations
     println(c.universe.showRaw(annotations))
-    annotations.find(a => a.tpe == c.universe.typeOf[BaseUnit]) match {
-      case None => c.abort(c.enclosingPosition, s"no base unit for '$short'")
-      case Some(a) => (extractConstant(c)(a.scalaArgs.head), extractConstant(c)(a.scalaArgs.last))
+    annotations.find(a => a.tpe == c.universe.typeOf[BaseUnit]).map {
+      case a => (extractConstant(c)(a.scalaArgs.head), extractConstant(c)(a.scalaArgs.last))
     }
   }
 }
@@ -145,6 +144,7 @@ object MeasureImpl {
     val treeTarget = compute_unit(c)(unitEx)
     val typeTarget = TypeParser.parse(treeTarget.toString.replace("$", ""))
 
+    // purge units that occur in both source and target
     var leftoverUnits: List[GeneralUnit] = List()
     var targetUnits = typeTarget.toList
     for(u <- typeSource) {
@@ -159,25 +159,33 @@ object MeasureImpl {
     }
 
     var conversionFactor = 1.0
+    var targetUnitsBase = List[GeneralUnit]()
+    var sourceUnitsBase = List[GeneralUnit]()
+
+    def getBase(short: String, factor: Double = 1.0): (String, Double) =
+      lookupBaseUnit(c, short) match {
+        case None =>
+          val longBase = lookupShortUnit(c, short)
+          (longBase, factor)
+        case Some((shortBase, newFactor)) => getBase(shortBase, factor*newFactor)
+      }
 
     for(u <- targetUnits) {
       val short = lookupLongUnit(c, u.name)
-      val (shortBase, factor) = lookupBaseUnit(c, short)
-      val longBase = lookupShortUnit(c, shortBase)
-      leftoverUnits.find(_.name == longBase) match {
-        case None => c.abort(c.enclosingPosition, "couldn't convert Measure - base unit not found")
-        case Some(v) =>
-          if(u.power == v.power) {
-            leftoverUnits = leftoverUnits.filter(_.name != v.name)
-            conversionFactor /= Math.pow(factor, u.power)
-          } else {
-            c.abort(c.enclosingPosition, "couldn't convert Measure - power mismatch")
-          }
-      }
+      val (base, factor) = getBase(short)
+      targetUnitsBase ::= SUnit(base, u.power)
+      conversionFactor /= factor
     }
 
-    if(leftoverUnits.length != 0) {
-      c.abort(c.enclosingPosition, "couldn't convert Measure - incompatible units")
+    for(u <- leftoverUnits) {
+      val short = lookupLongUnit(c, u.name)
+      val (base, factor) = getBase(short)
+      sourceUnitsBase ::= SUnit(base, u.power)
+      conversionFactor *= factor
+    }
+
+    if(sourceUnitsBase != targetUnitsBase) {
+      c.abort(c.enclosingPosition, s"couldn't convert Measure - incompatible units: $sourceUnitsBase, $targetUnitsBase")
     }
 
     val evals = ListBuffer[ValDef]()
