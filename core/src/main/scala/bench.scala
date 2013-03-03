@@ -14,13 +14,13 @@ abstract class Bench {
     (1 to 10).foreach(_ => runAdd(length))
     // throw away fastest and slowest 5%
     val timingsAdd = (1 to runs).map(_ => time { runAdd(length) } ).sorted.take(
-      (runs * 0.95).toInt).drop((runs * 0.05).toInt)
+      (runs * 0.90).toInt).drop((runs * 0.1).toInt)
     val perOpAdd = timingsAdd.sum * 1e6 / (timingsAdd.length * length)
     println(f"$perOpAdd%5.2f ns per addition,       fastest run ${timingsAdd.min}, slowest ${timingsAdd.max}")
 
     (1 to 10).foreach(_ => runMul(length))
     val timingsMul = (1 to runs).map(_ => time { runMul(length) } ).sorted.take(
-      (runs * 0.95).toInt).drop((runs * 0.05).toInt)
+      (runs * 0.90).toInt).drop((runs * 0.1).toInt)
     val perOpMul = timingsMul.sum * 1e6 / (timingsMul.length * length)
     println(f"$perOpMul%5.2f ns per multiplication, fastest run ${timingsMul.min}, slowest ${timingsMul.max}")
   }

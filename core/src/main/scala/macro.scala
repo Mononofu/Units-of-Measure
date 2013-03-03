@@ -55,11 +55,22 @@ object Main extends App {
 
   // type error
   // println("e + (b * c): " + (e + (b * c)))
-  //
-  val bench3 = new BenchMeasure()
-  bench3.bench(40, 1000000)
-  val bench2 = new BenchIntFlat()
-  bench2.bench(40, 1000000)
-  val bench4 = new BenchMeasureMacro()
-  bench4.bench(40, 1000000)
+
+  val numRuns = 200
+  val runSize = 2000000
+
+  def gc() = {
+    var obj = new Object();
+    val ref = new java.lang.ref.WeakReference[Object](obj);
+    obj = null;
+    while(ref.get() != null) {
+      System.gc();
+    }
+  }
+
+  new BenchMeasure().bench(numRuns, runSize)
+  gc()
+  new BenchIntFlat().bench(numRuns, runSize)
+  gc()
+  new BenchMeasureMacro().bench(numRuns, runSize)
 }
