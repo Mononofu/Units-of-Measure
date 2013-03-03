@@ -56,8 +56,8 @@ object Main extends App {
   // type error
   // println("e + (b * c): " + (e + (b * c)))
 
-  val numRuns = 200
-  val runSize = 2000000
+  val numRuns = 20
+  val runSize = 1000000
 
   def gc() = {
     var obj = new Object();

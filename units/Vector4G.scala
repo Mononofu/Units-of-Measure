@@ -15,32 +15,19 @@ case class Vector4G[T <: Measure[_]](val x: T, val y: T, val z: T, val w: T) {
 }
 
 object VectorImpl {
-  def precompute(c: Context)(a: c.Tree, b: c.Tree) = {
-    import c.universe._
-    val evals = ListBuffer[ValDef]()
-
-    def _precompute(value: Tree, tpe: Type): Ident = {
-      val freshName = newTermName(c.fresh("eval$"))
-      evals += ValDef(Modifiers(), freshName, TypeTree(tpe), value)
-      Ident(freshName)
-    }
-
-    val aID = _precompute(a, a.tpe)
-    val bID = _precompute(b, b.tpe)
-    (evals, aID, bID)
-  }
-
   def plus_impl[T <: Measure[_]](c: Context)(that: c.Expr[Vector4G[T]]): c.Expr[Any]  = {
     import c.universe._
-    val (evals, aID, bID) = precompute(c)(c.prefix.tree, that.tree)
+    val comp = new Precomputer[c.type](c)
+    val (aID, bID) = (comp.compute(c.prefix.tree), comp.compute(that.tree))
     val stats = q"Vector4G($aID.x + $bID.x, $aID.y + $bID.y, $aID.z + $bID.z, $aID.w + $bID.w)"
-    c.Expr(Block(evals.toList, stats))
+    c.Expr(Block(comp.evals.toList, stats))
   }
 
   def times_impl[T <: Measure[_]](c: Context)(that: c.Expr[Vector4G[T]]): c.Expr[Any]  = {
     import c.universe._
-    val (evals, aID, bID) = precompute(c)(c.prefix.tree, that.tree)
+    val comp = new Precomputer[c.type](c)
+    val (aID, bID) = (comp.compute(c.prefix.tree), comp.compute(that.tree))
     val stats = q"$aID.x * $bID.x + $aID.y * $bID.y + $aID.z * $bID.z + $aID.w * $bID.w"
-    c.Expr(Block(evals.toList, stats))
+    c.Expr(Block(comp.evals.toList, stats))
   }
 }
