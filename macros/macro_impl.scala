@@ -59,6 +59,18 @@ object Helpers {
       case a => (extractConstant(c)(a.scalaArgs.head), extractConstant(c)(a.scalaArgs.last))
     }
   }
+
+  def parseType(c: Context)(tpe: c.Type) = TypeParser.parse(tpe.toString.replace("$", "").replace("macroimpl.", ""))
+
+  def enforceUnitEquality(c: Context)(tpeA: c.Type, tpeB: c.Type) = {
+    val typeA = parseType(c)(tpeA)
+    val typeB = parseType(c)(tpeB)
+
+    if(typeA != typeB)
+      c.abort(c.enclosingPosition, s"type error, $typeA != $typeB")
+
+    combine(typeA).toTree(c)
+  }
 }
 
 import Helpers._
@@ -72,30 +84,28 @@ class Measure[T](val n: Int) extends AnyVal {
 
   def +[U](that: Measure[U])(implicit tag: WeakTypeTag[T], tag2: WeakTypeTag[U]) =
     macro MeasureImpl.addition_impl[T, U]
-
   def -[U](that: Measure[U])(implicit tag: WeakTypeTag[T], tag2: WeakTypeTag[U]) =
     macro MeasureImpl.subtraction_impl[T, U]
-
   def *[U](that: Measure[U])(implicit tag: WeakTypeTag[T], tag2: WeakTypeTag[U]) =
     macro MeasureImpl.multiplication_impl[T, U]
-
   def /[U](that: Measure[U])(implicit tag: WeakTypeTag[T], tag2: WeakTypeTag[U]) =
     macro MeasureImpl.division_impl[T, U]
 
-  def toInt = n.toInt
+  def toInt = n
+  def toLong = n.toLong
   def toDouble = n.toDouble
   def toFloat = n.toFloat
 
   def as(unitEx: String)(implicit tag: WeakTypeTag[T]) = macro MeasureImpl.as_impl[T]
-
   def unit(implicit tag: WeakTypeTag[T]) = macro MeasureImpl.get_unit_impl[T]
 }
 
 
 
-
 object MeasureImpl {
   def u(nEx: Int, unitEx: String) = macro u_impl
+
+  def u(nEx: Double, unitEx: String) = macro u_double_impl
 
   type u(unitEx: String) = macro u_unit_impl
 
@@ -119,6 +129,17 @@ object MeasureImpl {
     val parsedUnit = compute_unit(c)(unitEx)
 
     c.Expr(Block(comp.evals.toList, q"new Measure[$parsedUnit]($nID)"))
+  }
+
+  def u_double_impl(c: Context)
+        (nEx: c.Expr[Double], unitEx: c.Expr[String]): c.Expr[Any] = {
+    import c.universe._
+    val comp = new Precomputer[c.type](c)
+    val nID = comp.compute(nEx.tree)
+
+    val parsedUnit = compute_unit(c)(unitEx)
+
+    c.Expr(Block(comp.evals.toList, q"new MeasureDouble[$parsedUnit]($nID)"))
   }
 
   def u_unit_impl(c: Context)(unitEx: c.Expr[String]): c.Tree = {
@@ -218,22 +239,13 @@ object MeasureImpl {
     c.Expr[String](Literal(Constant(unit)))
   }
 
-  def parseType(c: Context)(tpe: c.Type) = TypeParser.parse(tpe.toString.replace("$", "").replace("macroimpl.", ""))
-
   def addition_impl[T: c.WeakTypeTag, U: c.WeakTypeTag]
     (c: Context)
     (that: c.Expr[Measure[U]])
     (tag: c.Expr[WeakTypeTag[T]], tag2: c.Expr[WeakTypeTag[U]]): c.Expr[Any] = {
     import c.universe._
 
-    val typeA = parseType(c)(tag.actualType)
-    val typeB = parseType(c)(that.actualType)
-
-    if(typeA != typeB)
-      c.abort(c.enclosingPosition, s"type error, $typeA != $typeB")
-
-    val resultType = combine(typeA).toTree(c)
-
+    val resultType = enforceUnitEquality(c)(tag.actualType, that.actualType)
     val comp = new Precomputer[c.type](c)
     val (aID, bID) = (comp.compute(c.prefix.tree), comp.compute(that.tree))
 
@@ -246,14 +258,7 @@ object MeasureImpl {
     (tag: c.Expr[WeakTypeTag[T]], tag2: c.Expr[WeakTypeTag[U]]): c.Expr[Any] = {
     import c.universe._
 
-    val typeA = parseType(c)(tag.actualType)
-    val typeB = parseType(c)(that.actualType)
-
-    if(typeA != typeB)
-      c.abort(c.enclosingPosition, s"type error, $typeA != $typeB")
-
-    val resultType = combine(typeA).toTree(c)
-
+    val resultType = enforceUnitEquality(c)(tag.actualType, that.actualType)
     val comp = new Precomputer[c.type](c)
     val (aID, bID) = (comp.compute(c.prefix.tree), comp.compute(that.tree))
 
