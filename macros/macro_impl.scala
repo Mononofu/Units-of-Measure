@@ -107,24 +107,12 @@ object MeasureImpl {
   def u_impl(c: Context)
         (nEx: c.Expr[Int], unitEx: c.Expr[String]): c.Expr[Any] = {
     import c.universe._
-    val evals = ListBuffer[ValDef]()
+    val comp = new Precomputer[c.type](c)
+    val nID = comp.compute(nEx.tree)
 
-    def _precompute(value: Tree, tpe: Type): Ident = {
-      val freshName = newTermName(c.fresh("eval$"))
-      evals += ValDef(Modifiers(), freshName, TypeTree(tpe), value)
-      Ident(freshName)
-    }
-
-    val nID = _precompute(nEx.tree, typeOf[Int])
     val parsedUnit = compute_unit(c)(unitEx)
 
-    val stats = Apply(Select(New(AppliedTypeTree(
-      Ident(newTypeName("Measure")),
-      List( parsedUnit )
-      )), nme.CONSTRUCTOR),
-    List(Ident(newTermName(nID.toString))))
-
-    c.Expr(Block(evals.toList, stats))
+    c.Expr(Block(comp.evals.toList, q"new Measure[$parsedUnit]($nID)"))
   }
 
   def u_unit_impl(c: Context)(unitEx: c.Expr[String]): c.Tree = {
@@ -157,8 +145,8 @@ object MeasureImpl {
     }
 
     var conversionFactor = 1.0
-    var targetUnitsBase = List[GeneralUnit]()
-    var sourceUnitsBase = List[GeneralUnit]()
+    var targetUnitsBase = ListBuffer[GeneralUnit]()
+    var sourceUnitsBase = ListBuffer[GeneralUnit]()
 
     def getBase(unitEx: String): (Seq[GeneralUnit], Double) = {
       val base: Seq[(Seq[GeneralUnit], Double)] = UnitParser(c).parseToUnitList(unitEx).map {
@@ -175,25 +163,19 @@ object MeasureImpl {
     }
 
 
-    for(u <- targetUnits) {
-      val short = lookupLongUnit(c, u.name)
-      val (baseUnits, factor) = getBase(short)
-      for(v <- baseUnits) {
-        targetUnitsBase ::= SUnit(v.name, u.power * v.power)
+    def processUnits(src: Seq[GeneralUnit], dst: ListBuffer[GeneralUnit], op: (Double, Double) => Double) = {
+      for(u <- src) {
+        val short = lookupLongUnit(c, u.name)
+        val (baseUnits, factor) = getBase(short)
+        baseUnits.foreach(v => dst += SUnit(v.name, u.power * v.power))
+        conversionFactor = op(conversionFactor, factor)
       }
-      conversionFactor /= factor
     }
 
-    for(u <- leftoverUnits) {
-      val short = lookupLongUnit(c, u.name)
-      val (baseUnits, factor) = getBase(short)
-      for(v <- baseUnits) {
-        sourceUnitsBase ::= SUnit(v.name, u.power * v.power)
-      }
-      conversionFactor *= factor
-    }
+    processUnits(targetUnits, targetUnitsBase, _ / _)
+    processUnits(leftoverUnits, sourceUnitsBase, _ * _)
 
-    if(sourceUnitsBase.sortBy(_.name) != targetUnitsBase.sortBy(_.name)) {
+    if(sourceUnitsBase.toList.sortBy(_.name) != targetUnitsBase.toList.sortBy(_.name)) {
       c.abort(c.enclosingPosition, s"couldn't convert Measure - incompatible units: $sourceUnitsBase, $targetUnitsBase")
     }
 
@@ -206,7 +188,6 @@ object MeasureImpl {
     }
 
     val nID = _precompute(c.prefix.tree, typeOf[Measure[_]])
-
     val stats = q"new Measure[$parsedUnit](($nID.n.toDouble * $conversionFactor).toInt)"
 
     c.Expr(Block(evals.toList, stats))
@@ -237,28 +218,12 @@ object MeasureImpl {
     c.Expr[String](Literal(Constant(unit)))
   }
 
-  def precompute(c: Context)(a: c.Tree, b: c.Tree) = {
-    import c.universe._
-    val evals = ListBuffer[ValDef]()
-
-    def _precompute(value: Tree, tpe: Type): Ident = {
-      val freshName = newTermName(c.fresh("eval$"))
-      evals += ValDef(Modifiers(), freshName, TypeTree(tpe), value)
-      Ident(freshName)
-    }
-
-    val aID = _precompute(a, typeOf[Measure[_]])
-    val bID = _precompute(b, typeOf[Measure[_]])
-    (evals, aID, bID)
-  }
-
   def parseType(c: Context)(tpe: c.Type) = TypeParser.parse(tpe.toString.replace("$", "").replace("macroimpl.", ""))
 
   def addition_impl[T: c.WeakTypeTag, U: c.WeakTypeTag]
     (c: Context)
     (that: c.Expr[Measure[U]])
     (tag: c.Expr[WeakTypeTag[T]], tag2: c.Expr[WeakTypeTag[U]]): c.Expr[Any] = {
-
     import c.universe._
 
     val typeA = parseType(c)(tag.actualType)
@@ -269,31 +234,16 @@ object MeasureImpl {
 
     val resultType = combine(typeA).toTree(c)
 
-    val (evals, aID, bID) = precompute(c)(that.tree, c.prefix.tree)
+    val comp = new Precomputer[c.type](c)
+    val (aID, bID) = (comp.compute(c.prefix.tree), comp.compute(that.tree))
 
-    val stats = Apply(Select(New(AppliedTypeTree(
-      Ident(newTypeName("Measure")),
-      List( resultType )
-      )), nme.CONSTRUCTOR),
-      List(Apply(Select(
-        Select(
-          Ident(newTermName(aID.toString)),
-          newTermName("n")),
-        newTermName("$plus")),
-          List(
-            Select(
-              Ident(newTermName(bID.toString)),
-              newTermName("n"))))))
-
-
-    c.Expr(Block(evals.toList, stats))
+    c.Expr(Block(comp.evals.toList, q"new Measure[$resultType]($aID.n + $bID.n)"))
   }
 
   def multiplication_impl[T: c.WeakTypeTag, U: c.WeakTypeTag]
     (c: Context)
     (that: c.Expr[Measure[U]])
     (tag: c.Expr[WeakTypeTag[T]], tag2: c.Expr[WeakTypeTag[U]]): c.Expr[Any] = {
-
     import c.universe._
 
     val typeA = parseType(c)(tag.actualType)
@@ -301,23 +251,9 @@ object MeasureImpl {
 
     val resultType = combine(typeA ++ typeB).toTree(c)
 
+    val comp = new Precomputer[c.type](c)
+    val (aID, bID) = (comp.compute(c.prefix.tree), comp.compute(that.tree))
 
-    val (evals, aID, bID) = precompute(c)(that.tree, c.prefix.tree)
-
-    val stats = Apply(Select(New(AppliedTypeTree(
-      Ident(newTypeName("Measure")),
-      List( resultType )
-      )), nme.CONSTRUCTOR),
-      List(Apply(Select(
-        Select(
-          Ident(newTermName(aID.toString)),
-          newTermName("n")),
-        newTermName("$times")),
-          List(
-            Select(
-              Ident(newTermName(bID.toString)),
-              newTermName("n"))))))
-
-    c.Expr(Block(evals.toList, stats))
+    c.Expr(Block(comp.evals.toList, q"new Measure[$resultType]($aID.n * $bID.n)"))
   }
 }
