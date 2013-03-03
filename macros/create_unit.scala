@@ -63,7 +63,7 @@ object CreateUnitMacros {
     c.introduceTopLevel(packageName, unitLookupShort)
 
     val classNameLong = newTypeName(s"Translate$$$longName")
-    val unitLookupLong = q"@macroimpl.ShortName(n = $shortName) class $classNameLong"
+    val unitLookupLong = q"@macroimpl.ShortName(n = $shortName) @macroimpl.BaseUnit(name = $baseName, factor = $factor) class $classNameLong"
     c.introduceTopLevel(packageName, unitLookupLong)
 
     Template(Nil, emptyValDef, existingCode )

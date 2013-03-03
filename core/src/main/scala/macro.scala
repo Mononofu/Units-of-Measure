@@ -4,25 +4,16 @@ import macroimpl._
 import MeasureImpl.u
 import units._
 
-import scala.reflect.runtime.universe.{ WeakTypeTag, Expr }
-
 object Main extends App {
-
-  /*def add[T: WeakTypeTag](n: Measure[T], that: Measure[T]): Measure[T] =
-    macro MeasureImpl.addition_impl[T]*/
-
-  /* Measure als Value class implementieren ! */
-  val a = u(2, "m")     // new Measure[Meter](2)
-  val b = u(3, "m")     // new Measure[Meter](3)
-  val c = u(4, "s")     // new Measure[Second](4)
-  val d = u(5, "m*s")   // new Measure[Times[Meter, Second]](5)
-  val e = u(10, "m*s/s") // new Measure[Divide[Times[Second, Meter], Second]](10)
-  val f = u(32, "m*s*s") // new Measure[Times[Second, Times[Second, Meter]]](32)
+  val a = u(2, "m")
+  val b = u(3, "m")
+  val c = u(4, "s")
+  val d = u(5, "m*s")
+  val e = u(10, "m*s/s")
+  val f = u(32, "m*s*s")
   val g = new Measure[CUnit[SUnit[Meter, Pos1], SUnit[Second, Pos2]]](10)
-  //val f = u(10, "m/s")
 
   val test: u("m*s") = u(10, "m*s")
-
 
   println("\n==== raw numbers")
   println("a: " + a)
@@ -69,4 +60,6 @@ object Main extends App {
   bench3.bench(40, 1000000)
   val bench2 = new BenchIntFlat()
   bench2.bench(40, 1000000)
+  val bench4 = new BenchMeasureMacro()
+  bench4.bench(40, 1000000)
 }

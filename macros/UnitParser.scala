@@ -11,6 +11,12 @@ case class UnitParser[C <: Context](c: C) extends JavaTokenParsers with PackratP
     case _ => c.abort(c.enclosingPosition, s"unknown units and/or invalid format '$in'")
   }
 
+  /* returns a list of SUnits */
+  def parseToUnitList(in: String) = parseAll(term, in) match {
+    case Success(r, _) => simplify(r)
+    case _ => c.abort(c.enclosingPosition, s"unknown units and/or invalid format '$in'")
+  }
+
   def toTypenames(units: List[~[String, List[GeneralUnit]]]): List[GeneralUnit] = units match {
     case Nil => Nil
     case ("*"~x) :: xs => x ++ toTypenames(xs)
@@ -42,7 +48,7 @@ case class UnitParser[C <: Context](c: C) extends JavaTokenParsers with PackratP
 
   lazy val unitname: PackratParser[String] = (
       "1" ^^ { _ => "Unit" }
-    | "[a-z]+".r ^^ { short =>
+    | "[a-zA-Z]+".r ^^ { short =>
         lookupShortUnit(c, short)
       }
     )

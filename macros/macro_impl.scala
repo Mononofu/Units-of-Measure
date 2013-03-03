@@ -51,11 +51,10 @@ object Helpers {
     }
   }
 
-  def lookupBaseUnit[C <: Context](c: C, short: String): Option[(String, Double)] = {
-    val unitSymbol = c.mirror.staticClass(packageName + ".Translate$" + short)
+  def lookupBaseUnit[C <: Context](c: C, unitName: String): Option[(String, Double)] = {
+    val unitSymbol = c.mirror.staticClass(packageName + ".Translate$" + unitName)
     val dummy = unitSymbol.typeSignature
     val annotations = unitSymbol.asClass.annotations
-    println(c.universe.showRaw(annotations))
     annotations.find(a => a.tpe == c.universe.typeOf[BaseUnit]).map {
       case a => (extractConstant(c)(a.scalaArgs.head), extractConstant(c)(a.scalaArgs.last))
     }
@@ -136,7 +135,6 @@ object MeasureImpl {
 
   def as_impl[T: c.WeakTypeTag]
     (c: Context)(unitEx: c.Expr[String])(tag: c.Expr[WeakTypeTag[T]]): c.Expr[Any] = {
-    /* TODO: add conversion */
     val parsedUnit = compute_unit(c)(unitEx)
     import c.universe._
 
@@ -162,29 +160,40 @@ object MeasureImpl {
     var targetUnitsBase = List[GeneralUnit]()
     var sourceUnitsBase = List[GeneralUnit]()
 
-    def getBase(short: String, factor: Double = 1.0): (String, Double) =
-      lookupBaseUnit(c, short) match {
-        case None =>
-          val longBase = lookupShortUnit(c, short)
-          (longBase, factor)
-        case Some((shortBase, newFactor)) => getBase(shortBase, factor*newFactor)
+    def getBase(unitEx: String): (Seq[GeneralUnit], Double) = {
+      val base: Seq[(Seq[GeneralUnit], Double)] = UnitParser(c).parseToUnitList(unitEx).map {
+        case long => lookupBaseUnit(c, long.name) match {
+          case None => (List(long), 1.0)
+          case Some((shortBaseEx, newFactor)) =>
+            val (units, factor) = getBase(shortBaseEx)
+            (units.map(u => SUnit(u.name, u.power * long.power)), newFactor * factor)
+        }
       }
+      val factor = base.map(_._2).reduce(_ * _)
+      val units = base.flatMap(_._1)
+      (units, factor)
+    }
+
 
     for(u <- targetUnits) {
       val short = lookupLongUnit(c, u.name)
-      val (base, factor) = getBase(short)
-      targetUnitsBase ::= SUnit(base, u.power)
+      val (baseUnits, factor) = getBase(short)
+      for(v <- baseUnits) {
+        targetUnitsBase ::= SUnit(v.name, u.power * v.power)
+      }
       conversionFactor /= factor
     }
 
     for(u <- leftoverUnits) {
       val short = lookupLongUnit(c, u.name)
-      val (base, factor) = getBase(short)
-      sourceUnitsBase ::= SUnit(base, u.power)
+      val (baseUnits, factor) = getBase(short)
+      for(v <- baseUnits) {
+        sourceUnitsBase ::= SUnit(v.name, u.power * v.power)
+      }
       conversionFactor *= factor
     }
 
-    if(sourceUnitsBase != targetUnitsBase) {
+    if(sourceUnitsBase.sortBy(_.name) != targetUnitsBase.sortBy(_.name)) {
       c.abort(c.enclosingPosition, s"couldn't convert Measure - incompatible units: $sourceUnitsBase, $targetUnitsBase")
     }
 

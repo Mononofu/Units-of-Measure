@@ -350,11 +350,15 @@ custom units
 
 static unit checking
 
+easy conversion to different units
+
 \chapter{Limitations}
 
 Measure can't be an instance of Numeric, since * returns a new type, and even + might do so
 
 runtime equality checks can't enforce units, since those are not available
+
+Macros don't play well with generics, so it's hard to define generic functions without using macros yourself
 
 \chapter{Acknowledgements}
 scala mailing list
@@ -362,6 +366,8 @@ scala mailing list
 #scala on freenode
 
 scala user group vienna
+
+Eugene, creator of macros
 
 
 \singlespacing

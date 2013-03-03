@@ -119,3 +119,42 @@ class BenchMeasure extends Bench {
     }
   }
 }
+
+
+
+class BenchMeasureMacro extends Bench {
+  var a: Array[ Vector4G[u("m")] ] = _
+  var b: Array[ Vector4G[u("m")]  ] = _
+  var c: Array[ Vector4G[u("m")]  ] = _
+  var d: Array[ u("m^2") ] = _
+
+  def init(length: Int) {
+    a = new Array[ Vector4G[u("m")]  ](length)
+    b = new Array[ Vector4G[u("m")]  ](length)
+    c = new Array[ Vector4G[u("m")]  ](length)
+    d = new Array[ u("m^2") ](length)
+
+    var i = 0
+    while(i < length) {
+      a(i) = Vector4G(u(i, "m"), u(i, "m"), u(i, "m"), u(i, "m"))
+      b(i) = Vector4G(u(i, "m"), u(i, "m"), u(i, "m"), u(i, "m"))
+      i+=1
+    }
+  }
+
+  def runAdd(length: Int) {
+    var i = 0
+    while(i < length) {
+      c(i) = a(i) + b(i)
+      i+=1
+    }
+  }
+
+  def runMul(length: Int) {
+    var i = 0
+    while(i < length) {
+      d(i) = a(i) * b(i)
+      i+=1
+    }
+  }
+}

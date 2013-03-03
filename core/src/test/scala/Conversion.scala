@@ -18,4 +18,8 @@ class ConversionSpec extends FlatSpec with ShouldMatchers {
     u(1, "h").as("s") should equal (u(3600, "s"))
   }
 
+  it should "work with complex base units" in {
+    u(1, "N").as("dyn") should equal (u(100000, "dyn"))
+  }
+
 }
