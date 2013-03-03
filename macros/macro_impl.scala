@@ -73,8 +73,14 @@ class Measure[T](val n: Int) extends AnyVal {
   def +[U](that: Measure[U])(implicit tag: WeakTypeTag[T], tag2: WeakTypeTag[U]) =
     macro MeasureImpl.addition_impl[T, U]
 
+  def -[U](that: Measure[U])(implicit tag: WeakTypeTag[T], tag2: WeakTypeTag[U]) =
+    macro MeasureImpl.subtraction_impl[T, U]
+
   def *[U](that: Measure[U])(implicit tag: WeakTypeTag[T], tag2: WeakTypeTag[U]) =
     macro MeasureImpl.multiplication_impl[T, U]
+
+  def /[U](that: Measure[U])(implicit tag: WeakTypeTag[T], tag2: WeakTypeTag[U]) =
+    macro MeasureImpl.division_impl[T, U]
 
   def toInt = n.toInt
   def toDouble = n.toDouble
@@ -179,18 +185,12 @@ object MeasureImpl {
       c.abort(c.enclosingPosition, s"couldn't convert Measure - incompatible units: $sourceUnitsBase, $targetUnitsBase")
     }
 
-    val evals = ListBuffer[ValDef]()
+    val comp = new Precomputer[c.type](c)
+    val nID = comp.compute(c.prefix.tree)
 
-    def _precompute(value: Tree, tpe: Type): Ident = {
-      val freshName = newTermName(c.fresh("eval$"))
-      evals += ValDef(Modifiers(), freshName, TypeTree(tpe), value)
-      Ident(freshName)
-    }
-
-    val nID = _precompute(c.prefix.tree, typeOf[Measure[_]])
     val stats = q"new Measure[$parsedUnit](($nID.n.toDouble * $conversionFactor).toInt)"
 
-    c.Expr(Block(evals.toList, stats))
+    c.Expr(Block(comp.evals.toList, stats))
   }
 
   def get_unit_impl[T: c.WeakTypeTag](c: Context)
@@ -198,7 +198,7 @@ object MeasureImpl {
 
     def prettyUnit(u: GeneralUnit) = {
       val short = lookupLongUnit(c, u.name)
-      if(u.power == 1) short
+      if(u.power.abs == 1) short
       else s"$short^${Math.abs(u.power)}"
     }
 
@@ -240,6 +240,26 @@ object MeasureImpl {
     c.Expr(Block(comp.evals.toList, q"new Measure[$resultType]($aID.n + $bID.n)"))
   }
 
+  def subtraction_impl[T: c.WeakTypeTag, U: c.WeakTypeTag]
+    (c: Context)
+    (that: c.Expr[Measure[U]])
+    (tag: c.Expr[WeakTypeTag[T]], tag2: c.Expr[WeakTypeTag[U]]): c.Expr[Any] = {
+    import c.universe._
+
+    val typeA = parseType(c)(tag.actualType)
+    val typeB = parseType(c)(that.actualType)
+
+    if(typeA != typeB)
+      c.abort(c.enclosingPosition, s"type error, $typeA != $typeB")
+
+    val resultType = combine(typeA).toTree(c)
+
+    val comp = new Precomputer[c.type](c)
+    val (aID, bID) = (comp.compute(c.prefix.tree), comp.compute(that.tree))
+
+    c.Expr(Block(comp.evals.toList, q"new Measure[$resultType]($aID.n - $bID.n)"))
+  }
+
   def multiplication_impl[T: c.WeakTypeTag, U: c.WeakTypeTag]
     (c: Context)
     (that: c.Expr[Measure[U]])
@@ -255,5 +275,22 @@ object MeasureImpl {
     val (aID, bID) = (comp.compute(c.prefix.tree), comp.compute(that.tree))
 
     c.Expr(Block(comp.evals.toList, q"new Measure[$resultType]($aID.n * $bID.n)"))
+  }
+
+  def division_impl[T: c.WeakTypeTag, U: c.WeakTypeTag]
+    (c: Context)
+    (that: c.Expr[Measure[U]])
+    (tag: c.Expr[WeakTypeTag[T]], tag2: c.Expr[WeakTypeTag[U]]): c.Expr[Any] = {
+    import c.universe._
+
+    val typeA = parseType(c)(tag.actualType)
+    val typeB = parseType(c)(that.actualType)
+
+    val resultType = combine(typeA ++ typeB.map(u => SUnit(u.name, -u.power))).toTree(c)
+
+    val comp = new Precomputer[c.type](c)
+    val (aID, bID) = (comp.compute(c.prefix.tree), comp.compute(that.tree))
+
+    c.Expr(Block(comp.evals.toList, q"new Measure[$resultType]($aID.n / $bID.n)"))
   }
 }
