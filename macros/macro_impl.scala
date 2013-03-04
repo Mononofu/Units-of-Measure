@@ -3,7 +3,7 @@ package macroimpl
 import language.experimental.macros
 import scala.reflect.macros.Context
 import collection.mutable.ListBuffer
-import scala.reflect.runtime.universe.{WeakTypeTag, TypeRef, TypeTag, Type}
+import scala.reflect.runtime.universe.{WeakTypeTag, TypeTag, Type}
 
 object Helpers {
   val packageName = "$$units$$"
@@ -81,7 +81,7 @@ object MeasureImpl {
   def u(nEx: Long, unitEx: String) = macro u_long_impl
   def u(nEx: Float, unitEx: String) = macro u_float_impl
   def u(nEx: Double, unitEx: String) = macro u_double_impl
-  def u[T: Numeric](nEx: T, unitEx: String) = macro u_numeric_impl[T]
+  def u[T: Numeric](nEx: T, unitEx: String)(implicit tag: WeakTypeTag[T]) = macro u_numeric_impl[T]
 
   type u(unitEx: String, tpeEx: Type) = macro u_unit_impl
   type u_i(unitEx: String) = macro u_unit_int_impl
@@ -136,14 +136,17 @@ object MeasureImpl {
     c.Expr(Block(comp.evals.toList, q"new MeasureDouble[$parsedUnit]($nID)"))
   }
 
-  def u_numeric_impl[T](c: Context)
+  def u_numeric_impl[T: c.WeakTypeTag](c: Context)
         (nEx: c.Expr[T], unitEx: c.Expr[String])
-        (evidence$1: c.Expr[Numeric[T]]): c.Expr[Any] = {
+        (evidence$1: c.Expr[Numeric[T]], tag: c.Expr[WeakTypeTag[T]]): c.Expr[Any] = {
     import c.universe._
     val comp = new Precomputer[c.type](c)
     val nID = comp.compute(nEx.tree)
     val parsedUnit = compute_unit(c)(unitEx)
-    c.Expr(Block(comp.evals.toList, q"new Measure[$parsedUnit]($nID)"))
+    val typeParm = tag.actualType match {
+      case TypeRef(_, _, List(TypeRef(_, t, _))) => t
+    }
+    c.Expr(Block(comp.evals.toList, q"new Measure[$parsedUnit, $typeParm]($nID)"))
   }
 
 

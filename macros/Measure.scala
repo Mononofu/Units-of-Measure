@@ -34,6 +34,11 @@ class Measure[T, N: Numeric](val n: N)(implicit num: Numeric[N]) {
 
   def as(unitEx: String)(implicit tag: WeakTypeTag[T]) = macro MeasureImpl.as_impl[T]
   def unit(implicit tag: WeakTypeTag[T]) = macro MeasureImpl.get_unit_impl[T]
+
+  override def equals(other: Any) = other match {
+    case that: Measure[T, N] => this.n == that.n
+    case _ => false
+  }
 }
 
 import Helpers._
