@@ -1,7 +1,7 @@
 package macros
 
 import macroimpl._
-import MeasureImpl.u
+import MeasureImpl.{u, u_i}
 import units._
 
 abstract class Bench {
@@ -34,8 +34,8 @@ abstract class Bench {
 
 
 // annoying: can't put Measure[T] or the typetag breaks ...
-case class Vector4M[T](val x: Measure[SUnit[T, Pos1]], val y: Measure[SUnit[T, Pos1]],
-  val z: Measure[SUnit[T, Pos1]], val w: Measure[SUnit[T, Pos1]]) {
+case class Vector4M[T](val x: MeasureInt[SUnit[T, Pos1]], val y: MeasureInt[SUnit[T, Pos1]],
+  val z: MeasureInt[SUnit[T, Pos1]], val w: MeasureInt[SUnit[T, Pos1]]) {
   def +(that: Vector4M[T]) = Vector4M(this.x + that.x, this.y + that.y,
     this.z + that.z, this.w + that.w)
 
@@ -87,13 +87,13 @@ class BenchMeasure extends Bench {
   var a: Array[ Vector4M[ Meter ] ] = _
   var b: Array[ Vector4M[ Meter ] ] = _
   var c: Array[ Vector4M[ Meter ] ] = _
-  var d: Array[ Measure[ SUnit[Meter, Pos2] ] ] = _
+  var d: Array[ MeasureInt[ SUnit[Meter, Pos2] ] ] = _
 
   def init(length: Int) {
     a = new Array[ Vector4M[ Meter ] ](length)
     b = new Array[ Vector4M[ Meter ] ](length)
     c = new Array[ Vector4M[ Meter ] ](length)
-    d = new Array[ Measure[ SUnit[Meter, Pos2] ] ](length)
+    d = new Array[ MeasureInt[ SUnit[Meter, Pos2] ] ](length)
 
     var i = 0
     while(i < length) {
@@ -123,16 +123,16 @@ class BenchMeasure extends Bench {
 
 
 class BenchMeasureMacro extends Bench {
-  var a: Array[ Vector4G[u("m")] ] = _
-  var b: Array[ Vector4G[u("m")]  ] = _
-  var c: Array[ Vector4G[u("m")]  ] = _
-  var d: Array[ u("m^2") ] = _
+  var a: Array[ Vector4G[u_i("m")] ] = _
+  var b: Array[ Vector4G[u_i("m")]  ] = _
+  var c: Array[ Vector4G[u_i("m")]  ] = _
+  var d: Array[ MeasureInt[SUnit[Meter, Pos2]] ] = _
 
   def init(length: Int) {
-    a = new Array[ Vector4G[u("m")]  ](length)
-    b = new Array[ Vector4G[u("m")]  ](length)
-    c = new Array[ Vector4G[u("m")]  ](length)
-    d = new Array[ u("m^2") ](length)
+    a = new Array[ Vector4G[u_i("m")]  ](length)
+    b = new Array[ Vector4G[u_i("m")]  ](length)
+    c = new Array[ Vector4G[u_i("m")]  ](length)
+    d = new Array[ MeasureInt[SUnit[Meter, Pos2]] ](length)
 
     var i = 0
     while(i < length) {

@@ -1,7 +1,7 @@
 package macros
 
 import macroimpl._
-import MeasureImpl.u
+import MeasureImpl.{u, u_i}
 import units._
 
 object Main extends App {
@@ -11,9 +11,9 @@ object Main extends App {
   val d = u(5, "m*s")
   val e = u(10, "m*s/s")
   val f = u(32, "m*s*s")
-  val g = new Measure[CUnit[SUnit[Meter, Pos1], SUnit[Second, Pos2]]](10)
+  val g = new Measure[CUnit[SUnit[Meter, Pos1], SUnit[Second, Pos2]], Int](10)
 
-  val test: u("m*s") = u(10, "m*s")
+  val test: u_i("m*s") = u(10, "m*s")
 
   println("\n==== raw numbers")
   println("a: " + a)
@@ -21,18 +21,16 @@ object Main extends App {
   println("u(10, 'm*s/s'): " + u(10, "m*s/s"))
 
   println("\n==== addition")
-  val tmp: u("m") = a + b
+  val tmp: u_i("m") = a + b
   println(s"$a + $b: " + (a + b))
   println("ugly manually defined unit is reduced too:")
-  println(s"$g + $f: " + (g + f) )
+  println(s"$g + $f: " + (g.asInt + f) )
 
 
   // type checker catches unit mismatches
   //println(d + e)
   // u(5, "m") + u(4, "s")
 
-  (new Measure[CUnit[SUnit[Meter, Pos1], SUnit[Second, Pos1]]](1) +
-   new Measure[CUnit[SUnit[Meter, Pos1], SUnit[Second, Pos1]]](2))
 
   println("\n==== multiplication")
   println(s"$b * $c: ${b * c}")
@@ -44,7 +42,7 @@ object Main extends App {
   println(s"$d + ($b * $c): ${d + (b * c)}")
   println(s"$d + ($b * $c): ${d + (b * c)}")
 
-  val result: u("m*s") = b * c
+  val result: u_i("m*s") = b * c
 
   println("\n==== access units with macro trickery")
   println(s"${b.unit}")

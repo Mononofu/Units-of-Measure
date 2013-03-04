@@ -24,6 +24,7 @@ object TypeParser extends JavaTokenParsers {
       case "SUnit["~u~","~d~"]" => List(SUnit(u, dimValue(d)))
     }
     | id~"["~typename~"]" ^^ { case n~"["~t~"]" => t }
+    | id~"["~typename~","~id~"]" ^^ { case n~"["~t~","~_~"]" => t }
     )
 
   def id: Parser[String] = rep1sep(ident, ".") ^^ ( _.last )

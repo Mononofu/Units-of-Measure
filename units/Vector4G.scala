@@ -9,13 +9,13 @@ import collection.mutable.ListBuffer
 // the type bound here is very important, otherwise the value class will be boxed
 // (ie T is assumed to be an object), and performance is abysmal.
 // check it with 'javap Vector4G' to see the byte code
-case class Vector4G[T <: Measure[_]](val x: T, val y: T, val z: T, val w: T) {
+case class Vector4G[T <: MeasureInt[_]](val x: T, val y: T, val z: T, val w: T) {
   def +(that: Vector4G[T]) = macro VectorImpl.plus_impl[T]
   def *(that: Vector4G[T]) = macro VectorImpl.times_impl[T]
 }
 
 object VectorImpl {
-  def plus_impl[T <: Measure[_]](c: Context)(that: c.Expr[Vector4G[T]]): c.Expr[Any]  = {
+  def plus_impl[T <: MeasureInt[_]](c: Context)(that: c.Expr[Vector4G[T]]): c.Expr[Any]  = {
     import c.universe._
     val comp = new Precomputer[c.type](c)
     val (aID, bID) = (comp.compute(c.prefix.tree), comp.compute(that.tree))
@@ -23,7 +23,7 @@ object VectorImpl {
     c.Expr(Block(comp.evals.toList, stats))
   }
 
-  def times_impl[T <: Measure[_]](c: Context)(that: c.Expr[Vector4G[T]]): c.Expr[Any]  = {
+  def times_impl[T <: MeasureInt[_]](c: Context)(that: c.Expr[Vector4G[T]]): c.Expr[Any]  = {
     import c.universe._
     val comp = new Precomputer[c.type](c)
     val (aID, bID) = (comp.compute(c.prefix.tree), comp.compute(that.tree))

@@ -5,27 +5,32 @@ import scala.reflect.macros.Context
 import collection.mutable.ListBuffer
 import scala.reflect.runtime.universe.{WeakTypeTag, TypeRef, TypeTag}
 
-class MeasureDouble[T](val n: Double) extends AnyVal {
+// to make it independent of number type, use Numeric typeclass from
+// https://github.com/non/spire
+// the one from scala is too slow
+
+class Measure[T, N: Numeric](val n: N)(implicit num: Numeric[N]) {
   override def toString = n.toString
 
-  def +[U](that: MeasureDouble[U])(implicit tag: WeakTypeTag[T], tag2: WeakTypeTag[U]) =
-    macro MeasureDoubleImpl.addition_impl[T, U]
-  def -[U](that: MeasureDouble[U])(implicit tag: WeakTypeTag[T], tag2: WeakTypeTag[U]) =
-    macro MeasureDoubleImpl.subtraction_impl[T, U]
-  def *[U](that: MeasureDouble[U])(implicit tag: WeakTypeTag[T], tag2: WeakTypeTag[U]) =
-    macro MeasureDoubleImpl.multiplication_impl[T, U]
-  def /[U](that: MeasureDouble[U])(implicit tag: WeakTypeTag[T], tag2: WeakTypeTag[U]) =
-    macro MeasureDoubleImpl.division_impl[T, U]
+  def +[U](that: Measure[U, N])(implicit tag: WeakTypeTag[T], tag2: WeakTypeTag[U]) =
+    macro MeasureGenericImpl.addition_impl[T, U]
+  def -[U](that: Measure[U, N])(implicit tag: WeakTypeTag[T], tag2: WeakTypeTag[U]) =
+    macro MeasureGenericImpl.subtraction_impl[T, U]
+  def *[U](that: Measure[U, N])(implicit tag: WeakTypeTag[T], tag2: WeakTypeTag[U]) =
+    macro MeasureGenericImpl.multiplication_impl[T, U]
+  def /[U](that: Measure[U, N])(implicit tag: WeakTypeTag[T], tag2: WeakTypeTag[U]) =
+    macro MeasureGenericImpl.division_impl[T, U]
 
-  def toInt = n.toInt
+  import num.mkNumericOps
+  def toInt = n
   def toLong = n.toLong
+  def toDouble = n.toDouble
   def toFloat = n.toFloat
-  def toDouble = n
 
   def asInt = new MeasureInt[T](n.toInt)
-  def asLong = new MeasureLong[T](n.toLong)
-  def asFloat = new MeasureFloat[T](n.toFloat)
-  def asDouble = this
+  def asLong = new MeasureLong[T](n.toInt)
+  def asFloat =  new MeasureFloat[T](n.toFloat)
+  def asDouble = new MeasureDouble[T](n.toDouble)
 
   def as(unitEx: String)(implicit tag: WeakTypeTag[T]) = macro MeasureImpl.as_impl[T]
   def unit(implicit tag: WeakTypeTag[T]) = macro MeasureImpl.get_unit_impl[T]
@@ -33,10 +38,10 @@ class MeasureDouble[T](val n: Double) extends AnyVal {
 
 import Helpers._
 
-object MeasureDoubleImpl {
-    def addition_impl[T: c.WeakTypeTag, U: c.WeakTypeTag]
+object MeasureGenericImpl {
+def addition_impl[T: c.WeakTypeTag, U: c.WeakTypeTag]
     (c: Context)
-    (that: c.Expr[MeasureDouble[U]])
+    (that: c.Expr[Measure[U, _]])
     (tag: c.Expr[WeakTypeTag[T]], tag2: c.Expr[WeakTypeTag[U]]): c.Expr[Any] = {
     import c.universe._
 
@@ -44,12 +49,12 @@ object MeasureDoubleImpl {
     val comp = new Precomputer[c.type](c)
     val (aID, bID) = (comp.compute(c.prefix.tree), comp.compute(that.tree))
 
-    c.Expr(Block(comp.evals.toList, q"new MeasureDouble[$resultType]($aID.n + $bID.n)"))
+    c.Expr(Block(comp.evals.toList, q"new Measure[$resultType]($aID.n + $bID.n)"))
   }
 
   def subtraction_impl[T: c.WeakTypeTag, U: c.WeakTypeTag]
     (c: Context)
-    (that: c.Expr[MeasureDouble[U]])
+    (that: c.Expr[Measure[U, _]])
     (tag: c.Expr[WeakTypeTag[T]], tag2: c.Expr[WeakTypeTag[U]]): c.Expr[Any] = {
     import c.universe._
 
@@ -57,12 +62,12 @@ object MeasureDoubleImpl {
     val comp = new Precomputer[c.type](c)
     val (aID, bID) = (comp.compute(c.prefix.tree), comp.compute(that.tree))
 
-    c.Expr(Block(comp.evals.toList, q"new MeasureDouble[$resultType]($aID.n - $bID.n)"))
+    c.Expr(Block(comp.evals.toList, q"new Measure[$resultType]($aID.n - $bID.n)"))
   }
 
   def multiplication_impl[T: c.WeakTypeTag, U: c.WeakTypeTag]
     (c: Context)
-    (that: c.Expr[MeasureDouble[U]])
+    (that: c.Expr[Measure[U, _]])
     (tag: c.Expr[WeakTypeTag[T]], tag2: c.Expr[WeakTypeTag[U]]): c.Expr[Any] = {
     import c.universe._
 
@@ -74,12 +79,12 @@ object MeasureDoubleImpl {
     val comp = new Precomputer[c.type](c)
     val (aID, bID) = (comp.compute(c.prefix.tree), comp.compute(that.tree))
 
-    c.Expr(Block(comp.evals.toList, q"new MeasureDouble[$resultType]($aID.n * $bID.n)"))
+    c.Expr(Block(comp.evals.toList, q"new Measure[$resultType]($aID.n * $bID.n)"))
   }
 
   def division_impl[T: c.WeakTypeTag, U: c.WeakTypeTag]
     (c: Context)
-    (that: c.Expr[MeasureDouble[U]])
+    (that: c.Expr[Measure[U, _]])
     (tag: c.Expr[WeakTypeTag[T]], tag2: c.Expr[WeakTypeTag[U]]): c.Expr[Any] = {
     import c.universe._
 
@@ -91,6 +96,7 @@ object MeasureDoubleImpl {
     val comp = new Precomputer[c.type](c)
     val (aID, bID) = (comp.compute(c.prefix.tree), comp.compute(that.tree))
 
-    c.Expr(Block(comp.evals.toList, q"new MeasureDouble[$resultType]($aID.n / $bID.n)"))
+    c.Expr(Block(comp.evals.toList, q"new Measure[$resultType]($aID.n / $bID.n)"))
   }
+
 }
