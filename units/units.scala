@@ -18,3 +18,6 @@ trait Kilogram extends MyUnit("Kilogram", "kg", (1000, "g"))
 
 trait Newton extends MyUnit("Newton", "N", (1, "kg*m/s^2"))
 trait Dyne extends MyUnit("Dyne", "dyn", (1, "g*cm/s^2"))
+
+trait Radian extends MyUnit("Radian", "rad", (1, "1"))
+trait Degree extends MyUnit("Degree", "deg", (3.1416/180., "rad"))

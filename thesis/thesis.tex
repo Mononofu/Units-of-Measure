@@ -143,7 +143,7 @@ The source code for all benchmarks mentioned can be found on GitHub: \url{https:
 
 \chapter{Related Work}
 
-In principle, there are two distinct ways to implement units of measurement in a programming language: Either statically as part of the type system, or dynamically with objects that know their own unit. Each approach has its own merits and disadvantages, so I examine a few existing implementations in common languages before creating my own solution.
+In principle, there are two distinct ways to implement units of measurement in a programming language: Either statically as part of the type system, or dynamically with objects that know their own unit. Each approach has its own merits and disadvantages, so in the following I examine a few existing implementations in common languages before creating my own solution.
 
 \section{Dynamic Systems}
 
@@ -340,25 +340,31 @@ Another such example comes from \citep{McBeath08}, who implements a simple unit 
 
 Finally, there is \verb/ScalaQuantity/ \citep{Hans12}, which is closely modeled on Haskell's \verb/Dimensional/. Again, it does not allow user defined units and is otherwise so similar to \verb/Dimensional/ that I won't cover it in detail.
 
-Currently, there is no Units of Measure system in Scala that allows user defined units or provides for calculations without runtime overhead. This inspired me to create my own library, which I will cover in the following.
+Currently, there is no Units of Measure system in Scala that allows user defined units or provides for calculations without runtime overhead. This inspired me to create my own library, which I cover in the following.
 
 \chapter{Objectives}
 
-no runtime overhead
+As we have seen, there are a few common features that almost all systems support (custom units, conversions), while some aspects are limited to more advanced libraries (generics, no runtime overhead). I aim to make my Units of Measure system as comprehensive as possible, therefore I present a short summary of all desirable features here. This summary serves as a reference for my implementation, as well as a handy reminder for the reader.
 
-custom units
 
-static unit checking
+\begin{description}
+  \item[No Runtime Overhead] This is one of the most important goals - in many systems that profit from unit checking (games, embedded systems), computing power is at a premium during runtime, while processing at compile time is of little consequence. This also extends to memory consumption - Measures should need no more space than primitive numbers. In fact, they should be indistinguishable at runtime.
 
-easy conversion to different units
+  \item[Static Unit Checking] Any mistakes in the units of variables should be detected at compile time - there should not be any surprises at runtime! This is also closely related to the goal above. In fact, it is only possible to check units at compile time, as there is no unit information left at runtime. A simple way to achieve this - also the own I intend to use - is to offload the work of enforcing unit correctness onto the type system, by for example specifying the units as type parameters.
 
-generic functions and classes
+  \item[Custom Units] While it is imperative to provide a thorough selection of units - the SI system at the very least -, it is simply impossible to collect and implement every possible unit. One Application might make heavy use from different types of currency, while another is solely concerned with physical temperatures. Therefore it should be possible for the user to define his own units, as well as to connect them to already existing units so that automatic conversion can take place.
 
-ability to view the unit of a given Measure, at least if its type is known at compile time
+  \item[Unit Conversion] To take full advantage of the provided units, helper methods should automatically convert numbers between different unit systems, as specified by the user. For example, \verb|u(10, "m/s").as("km/h")| automatically changes the units of the Measure and adjusts its value accordingly, to \verb/36/. Naturally, this relationship between units needs to be reflected in their definition, otherwise automatic conversions are impossible.
 
-Measure implementation for Double, Int, Float and Long + instances of Numeric
+  \item[Access to a Measure's Units] While it is impossible to access unit information at runtime - see the first goal -, it should still be possible to query the unit of a Measure when its type is known. This is essentially a way to pretty print the underlying type information for a human reader.
 
-\chapter{Limitations}
+  \item[Generics] Another very important aspect is the support of generic classes and methods. A clarifying example: \verb|def square[T](n: T) = n*n| should automatically infer that its return type is T with all units squared. The same principle extends to classes, the most common use case being a simple vector of numbers that defines operations like addition or dot product.
+
+  \item[Implementations for common primitives, as well as all instances of Numeric] Finally, it should be possible to use every type that is an instance of Numeric (that is, every type that can be used as a number) as the underlying type for a Measure. Additionally, special support should be provided for primitives (int, long, float, double), since their performance is the most critical.
+
+\end{description}
+
+\section{Limitations}
 
 Measure can't be an instance of Numeric, since * returns a new type, and even + might do so
 
@@ -369,7 +375,7 @@ Macros don't play well with generics, so it's hard to define generic functions w
 \chapter{Acknowledgements}
 scala mailing list
 
-#scala on freenode
+\#scala on freenode
 
 scala user group vienna
 

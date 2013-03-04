@@ -211,7 +211,7 @@ object MeasureImpl {
       }
     }
 
-    var conversionFactor = 1.0
+    var conversionFactor: Double = 1.0
     var targetUnitsBase = ListBuffer[GeneralUnit]()
     var sourceUnitsBase = ListBuffer[GeneralUnit]()
 
@@ -252,9 +252,16 @@ object MeasureImpl {
     val fullType = c.prefix.tree.tpe.toString
     val baseType = fullType.substring(0, fullType.indexOf("["))
     val className = baseType.substring(baseType.lastIndexOf(".") + 1)
-    val clasz = newTypeName(className)
 
-    val stats = q"new $clasz[$parsedUnit](($nID.n.toDouble * $conversionFactor).toInt)"
+    val stats = className match {
+      case "MeasureInt" => q"new MeasureInt[$parsedUnit](($nID.n.toDouble * $conversionFactor).toInt)"
+      case "MeasureLong" => q"new MeasureLong[$parsedUnit](($nID.n.toDouble * $conversionFactor).toLong)"
+      case "MeasureFloat" => q"new MeasureFloat[$parsedUnit](($nID.n.toDouble * $conversionFactor).toFloat)"
+      case "MeasureDouble" => q"new MeasureDouble[$parsedUnit]($nID.n.toDouble * $conversionFactor)"
+      case "Measure" => q"new Measure[$parsedUnit]($nID.n.toDouble * $conversionFactor)"
+    }
+
+    println(stats)
 
     c.Expr(Block(comp.evals.toList, stats))
   }
