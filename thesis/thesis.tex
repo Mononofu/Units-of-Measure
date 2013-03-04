@@ -120,7 +120,9 @@ Univ.-Prof. Dr. Jens \textsc{Knoop}
 % \onehalfspacing
 \chapter*{Preface}
 
-Ipsum Lorem
+Lorem ipsum dolor sit amet, consectetur adipiscing elit. Donec in ligula et massa ultrices luctus. Aenean nec orci lectus. Maecenas ut ligula non eros dictum porttitor. Nulla vel libero vitae dolor vehicula luctus. Maecenas venenatis sapien eu mi vehicula non dapibus lorem cursus. In dapibus ornare turpis, id tincidunt odio consectetur sit amet. Integer placerat varius velit at semper. Morbi id erat felis. Donec scelerisque eros in diam sollicitudin dictum. In lobortis imperdiet sapien. Fusce volutpat orci sit amet orci consectetur faucibus.
+
+Nullam mattis felis ac est feugiat porta. Suspendisse potenti. Suspendisse non augue eu dolor ultrices dignissim id ut augue. Donec sit amet mi a leo egestas lobortis sed a lorem. Nam sit amet turpis non mi gravida tempor id iaculis purus. Duis hendrerit justo quis orci pellentesque eu luctus magna facilisis. Nulla convallis dui vitae lorem ultrices dignissim. Praesent interdum volutpat aliquam. Nullam massa felis, accumsan vel congue hendrerit, tristique at lectus. Integer ac ipsum nec nisl elementum consequat ut vel erat. Suspendisse potenti. Proin varius, orci vel imperdiet rhoncus, nisi nibh lobortis erat, eget ultrices nibh tortor ac est. Nulla facilisi. Aenean aliquet, dui quis consectetur tempus, nunc elit volutpat nunc, eu euismod arcu diam et arcu. Aenean vulputate metus lectus, id euismod ipsum.4
 \\ \\
 Vienna, February 12th, 2010  \hfill Julian Schrittwieser
 
@@ -136,10 +138,10 @@ Vienna, February 12th, 2010  \hfill Julian Schrittwieser
 mars rover example
 
 \section{Nomenclature}
-Throughout this paper, I use \emph{Measure} to refer to a number annotated with its corresponding units. The exact implementation of this annotation depends on the context, some libraries use static type informations, others fields in an object. \emph{Units of Measure} is used to refer to any system that provides such an implementation, including methods to perform arithmetic with \emph{Measure}s.
+Throughout this paper, I use \emph{Measure} to refer to a number annotated with its corresponding units. The exact implementation of this annotation depends on the context, some libraries use static type informations, others fields in an object. \emph{Units of Measure} is used to refer to any system that provides such an implementation, including methods to perform arithmetic with \emph{Measure}s. \emph{Units} are the physical units in abbreviated or full form that the Measure is used to represent. Examples include \verb|m/s| for speed or \verb|kg*m/s^2 == N| for force.
 
 \section{Source Code}
-The source code for all benchmarks mentioned can be found on GitHub: \url{https://github.com/Mononofu/Units-of-Measure/tree/master/thesis/benchmarks}. This same repository also contains the source for this document (\url{https://github.com/Mononofu/Units-of-Measure/tree/master/thesis}) as well as the implementation of the Units of Measurement system in Scala (\url{https://github.com/Mononofu/Units-of-Measure}).
+The source code for all benchmarks mentioned can be found on GitHub: \url{https://github.com/Mononofu/Units-of-Measure/tree/master/thesis/benchmarks}. This same repository also contains the source for this document (\url{https://github.com/Mononofu/Units-of-Measure/tree/master/thesis}) as well as the implementation of the Units of Measurement system in Scala (\url{https://github.com/Mononofu/Units-of-Measure}). All code is provided under the GNU General Public License, version 3, as is and without warranty of any kind.
 
 \chapter{Related Work}
 
@@ -382,8 +384,34 @@ Before I describe my implementation in detail, I provide a short list of its lim
 
 \end{description}
 
-
 \chapter{Implementation}
+
+The implementation of my Units of Measure system rests on a few cornerstones that I present here. Without those, this system would not be possible, at least not without sacrificing a few of its goals. Some of those features (like Type Macros) are still very experimental and only available in nightly builds of Scala 2.11. Therefore, my library does not work with the current stable version of Scala (2.10 at the of writing). Luckily, it is very easy to use Scala 2.11 even now - builds are provided over a Sonatype repository and can be used with a simple sbt include (sbt is the de facto standard build system for Scala).
+
+\section{Macros in Scala}
+
+basic principles
+
+\subsection{Context and the Universe}
+\subsection{Type Macros}
+defining custom units and storing book-keeping information
+
+\section{Value Classes}
+
+achieving 0-overhead
+
+\section{Parser Combinators}
+
+parsing unit expressions from the helper macros and Measure type parameters
+
+
+
+\chapter{Future Work}
+
+better generics
+
+improvements to value classes
+
 
 \chapter{Acknowledgements}
 scala mailing list
