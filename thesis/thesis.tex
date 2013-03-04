@@ -366,11 +366,24 @@ As we have seen, there are a few common features that almost all systems support
 
 \section{Limitations}
 
-Measure can't be an instance of Numeric, since * returns a new type, and even + might do so
+Before I describe my implementation in detail, I provide a short list of its limitations. Those are mostly based on limitations of the JVM itself, or on more fundamental issues.
 
-runtime equality checks can't enforce units, since those are not available
+\begin{description}
+  \item[Measure is not an instance of Numeric] While Measure requires its underlying type to be an instance of Numeric, it cannot be such an instance itself. The reason is simple: Multiplication will result in a Measure with a different type than the two operands (the units change), thus violating the type bounds of Numeric. The same can even happen for simple addition: Since all operations with a Measure canonicalize (reduce and sort) its type argument (representing its unit), it is possible that an addition of two Measures results in a Measure with a different type.
 
-Macros don't play well with generics, so it's hard to define generic functions without using macros yourself
+  \item[Runtime equality ignores units] Since one fundamental goal was to incur no runtime overhead, it is obviously impossible to check unit equality at runtime. In fact, due to the nature of my implementation, Measures based on primitives are indistinguishable from those primitives at runtime - the wrapping Measure class only exists during compilation.
+
+  \item[Generics require Macros] In Java and all languages based on it, generics are implemented in a simple way: The type parameter is only known to the compiler, at runtime the generic class is represented by its raw counterpart. Therefore, all type parameters share the same single method/class - unlike C++, where a separate instance of the generic class is generated for each and every different type parameter. This presents a problem for the Measure macros, since they need to know the Measure's actual type parameter to correctly perform their work (In normal Scala code, it is only known that there is some \verb|Measure[T]|, not very helpful).
+
+  The solution to this problem is to define all generic methods that use Measures as macros, essentially mirroring the way C++ templates are implemented in Scala. As a downside, the Measure macros will be called every time the generic method is used, not just once for each type parameter.
+
+  \item[Arrays lead to degraded Performance] Due to choices made in the current implementation of value classes in Scala, and issues with arrays on the JVM, Measures experience degraded performance when placed in arrays. While the Measure wrapper class is normally only present at compile time for primitives, arrays force the Measure class to stay present - essentially requiring an explicit boxing/unboxing step for each calculation done with the Measure, and also resulting in an increased memory usage. As a workaround, Vector classes with explicit members can be used to reduce the memory overhead.
+
+
+\end{description}
+
+
+\chapter{Implementation}
 
 \chapter{Acknowledgements}
 scala mailing list
