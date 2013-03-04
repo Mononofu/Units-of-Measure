@@ -32,6 +32,7 @@ object Helpers {
   }
 
   def lookupShortUnit[C <: Context](c: C, short: String): String = {
+    if(short == "1") return "Unit"
     val unitSymbol = c.mirror.staticClass(packageName + ".Translate$" + short)
     val dummy = unitSymbol.typeSignature
     val annotations = unitSymbol.asClass.annotations
@@ -42,6 +43,7 @@ object Helpers {
   }
 
   def lookupLongUnit[C <: Context](c: C, long: String): String = {
+    if(long == "Unit") return "1"
     val unitSymbol = c.mirror.staticClass(packageName + ".Translate$" + long)
     val dummy = unitSymbol.typeSignature
     val annotations = unitSymbol.asClass.annotations
@@ -52,6 +54,7 @@ object Helpers {
   }
 
   def lookupBaseUnit[C <: Context](c: C, unitName: String): Option[(String, Double)] = {
+    if(unitName == "1" || unitName == "Unit") return None
     val unitSymbol = c.mirror.staticClass(packageName + ".Translate$" + unitName)
     val dummy = unitSymbol.typeSignature
     val annotations = unitSymbol.asClass.annotations

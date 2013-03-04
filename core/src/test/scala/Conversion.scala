@@ -16,10 +16,12 @@ class ConversionSpec extends FlatSpec with ShouldMatchers {
 
   it should "resolve units recursively" in {
     u(1, "h").as("s") should equal (u(3600, "s"))
+    u(1, "h").as("s").unit should equal ("s")
   }
 
   it should "work with complex base units" in {
     u(1, "N").as("dyn") should equal (u(100000, "dyn"))
+    u(1, "N").as("dyn").unit should equal ("dyn")
   }
 
 }
