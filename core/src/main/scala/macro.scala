@@ -7,7 +7,7 @@ import units._
 object Main extends App {
   val a = u(2, "m")
   val b = u(3, "m")
-  val c = u(4, "s")
+  val h = u(4, "s")
   val d = u(5, "m*s")
   val e = u(10, "m*s/s")
   val f = u(32, "m*s*s")
@@ -33,26 +33,26 @@ object Main extends App {
 
 
   println("\n==== multiplication")
-  println(s"$b * $c: ${b * c}")
-  println(s"$e * $c: ${e * c}")
+  println(s"$b * $h: ${b * h}")
+  println(s"$e * $h: ${e * h}")
 
   println("10 m/s * 32 s: " + u(10, "m/s") * u(32, "s"))
 
   println("\n==== combined")
-  println(s"$d + ($b * $c): ${d + (b * c)}")
-  println(s"$d + ($b * $c): ${d + (b * c)}")
+  println(s"$d + ($b * $h): ${d + (b * h)}")
+  println(s"$d + ($b * $h): ${d + (b * h)}")
 
-  val result: u_i("m*s") = b * c
+  val result: u_i("m*s") = b * h
 
   println("\n==== access units with macro trickery")
   println(s"${b.unit}")
-  println(s"${c.unit}")
+  println(s"${h.unit}")
   println(s"${d.unit}")
   println(s"${e.unit}")
   println(s"${f.unit}")
 
   // type error
-  // println("e + (b * c): " + (e + (b * c)))
+  // println("e + (b * h): " + (e + (b * h)))
 
   val numRuns = 20
   val runSize = 1000000
@@ -71,4 +71,8 @@ object Main extends App {
   new BenchIntFlat().bench(numRuns, runSize)
   gc()
   new BenchMeasureMacro().bench(numRuns, runSize)
+
+
+  val c = u(2.998e8, "m/s")
+  println( (u(1.0, "g") * c * c).as("J") )
 }
