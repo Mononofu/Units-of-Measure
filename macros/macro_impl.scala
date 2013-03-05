@@ -53,13 +53,15 @@ object Helpers {
     }
   }
 
-  def lookupBaseUnit[C <: Context](c: C, unitName: String): Option[(String, Double)] = {
+  def lookupBaseUnit[C <: Context](c: C, unitName: String): Option[(String, Double, Double)] = {
     if(unitName == "1" || unitName == "Unit") return None
     val unitSymbol = c.mirror.staticClass(packageName + ".Translate$" + unitName)
     val dummy = unitSymbol.typeSignature
     val annotations = unitSymbol.asClass.annotations
     annotations.find(a => a.tpe == c.universe.typeOf[BaseUnit]).map {
-      case a => (extractConstant(c)(a.scalaArgs.head), extractConstant(c)(a.scalaArgs.last))
+      case a => (extractConstant(c)(a.scalaArgs.head),
+                 extractConstant(c)(a.scalaArgs(1)),
+                 extractConstant(c)(a.scalaArgs(2)))
     }
   }
 
@@ -211,36 +213,63 @@ object MeasureImpl {
       }
     }
 
-    var conversionFactor: Double = 1.0
     var targetUnitsBase = ListBuffer[GeneralUnit]()
     var sourceUnitsBase = ListBuffer[GeneralUnit]()
 
-    def getBase(unitEx: String): (Seq[GeneralUnit], Double) = {
-      val base: Seq[(Seq[GeneralUnit], Double)] = UnitParser(c).parseToUnitList(unitEx).map {
+    def getBase(unitEx: String, op: (Double, Double, Double) => Double): (Seq[GeneralUnit], Double, Double) = {
+      val base: Seq[(Seq[GeneralUnit], Double, Double)] = UnitParser(c).parseToUnitList(unitEx).map {
         case long => lookupBaseUnit(c, long.name) match {
-          case None => (List(long), 1.0)
-          case Some((shortBaseEx, newFactor)) =>
-            val (units, factor) = getBase(shortBaseEx)
-            (units.map(u => SUnit(u.name, u.power * long.power)), newFactor * factor)
+          case None => (List(long), 1.0, 0.0)
+          case Some((shortBaseEx, newFactor, newOffset)) =>
+            val (units, factor, offset) = getBase(shortBaseEx, op)
+            println(s"\tbase for $long")
+            println(s"$newFactor - $newOffset")
+            println(s"$factor - $offset")
+            println("new approach:")
+            println(s"${op(newOffset, offset, newFactor)}")
+            println(units)
+            (units.map(u => SUnit(u.name, u.power * long.power)),
+             newFactor * factor,
+             op(newOffset, offset, newFactor))
         }
       }
       val factor = base.map(_._2).reduce(_ * _)
       val units = base.flatMap(_._1)
-      (units, factor)
+      println(base.map(_._3))
+      val offset = base.map(_._3).reduce(_ + _)
+      (units, factor, offset)
+    }
+
+    def combineOffsetTargetUnits(oldOffset: Double, newOffset: Double, factor: Double) = {
+      println(s"converting target units: ($newOffset) / $factor - $oldOffset = ${(newOffset) / factor - oldOffset}")
+      newOffset / factor - oldOffset
+    }
+
+    def combineOffsetSourceUnits(oldOffset: Double, newOffset: Double, factor: Double) = {
+      println(s"converting source units: $oldOffset * $factor + $newOffset")
+      oldOffset * factor + newOffset
     }
 
 
-    def processUnits(src: Seq[GeneralUnit], dst: ListBuffer[GeneralUnit], op: (Double, Double) => Double) = {
+    def processUnits(src: Seq[GeneralUnit], dst: ListBuffer[GeneralUnit],
+      baseOffOp: (Double, Double, Double) => Double): (Double, Double) = {
+      var totalFactor = 1.0
+      var totalOffset = 0.0
       for(u <- src) {
         val short = lookupLongUnit(c, u.name)
-        val (baseUnits, factor) = getBase(short)
+        val (baseUnits, factor, offset) = getBase(short, baseOffOp)
+        println(s"offset: $offset")
         baseUnits.foreach(v => dst += SUnit(v.name, u.power * v.power))
-        conversionFactor = op(conversionFactor, factor)
+        totalOffset += offset
+        totalFactor *= factor
       }
+      (totalFactor, totalOffset)
     }
 
-    processUnits(targetUnits, targetUnitsBase, _ / _)
-    processUnits(leftoverUnits, sourceUnitsBase, _ * _)
+    val (targetFactor, targetOffset) = processUnits(targetUnits, targetUnitsBase,
+      combineOffsetTargetUnits)
+    val (sourceFactor, sourceOffset) = processUnits(leftoverUnits, sourceUnitsBase,
+      combineOffsetSourceUnits)
 
     if(sourceUnitsBase.toList.sortBy(_.name) != targetUnitsBase.toList.sortBy(_.name)) {
       c.abort(c.enclosingPosition, s"couldn't convert Measure - incompatible units: $sourceUnitsBase, $targetUnitsBase")
@@ -253,15 +282,14 @@ object MeasureImpl {
     val baseType = fullType.substring(0, fullType.indexOf("["))
     val className = baseType.substring(baseType.lastIndexOf(".") + 1)
 
+    val valueExp = q"($nID.n.toDouble * $sourceFactor + $sourceOffset) / $targetFactor + $targetOffset"
     val stats = className match {
-      case "MeasureInt" => q"new MeasureInt[$parsedUnit](($nID.n.toDouble * $conversionFactor).toInt)"
-      case "MeasureLong" => q"new MeasureLong[$parsedUnit](($nID.n.toDouble * $conversionFactor).toLong)"
-      case "MeasureFloat" => q"new MeasureFloat[$parsedUnit](($nID.n.toDouble * $conversionFactor).toFloat)"
-      case "MeasureDouble" => q"new MeasureDouble[$parsedUnit]($nID.n.toDouble * $conversionFactor)"
-      case "Measure" => q"new Measure[$parsedUnit]($nID.n.toDouble * $conversionFactor)"
+      case "MeasureInt" => q"new MeasureInt[$parsedUnit](($valueExp).toInt)"
+      case "MeasureLong" => q"new MeasureLong[$parsedUnit](($valueExp).toLong)"
+      case "MeasureFloat" => q"new MeasureFloat[$parsedUnit](($valueExp).toFloat)"
+      case "MeasureDouble" => q"new MeasureDouble[$parsedUnit]($valueExp)"
+      case "Measure" => q"new Measure[$parsedUnit]($valueExp)"
     }
-
-    println(stats)
 
     c.Expr(Block(comp.evals.toList, stats))
   }

@@ -24,4 +24,15 @@ class ConversionSpec extends FlatSpec with ShouldMatchers {
     u(1, "N").as("dyn").unit should equal ("dyn")
   }
 
+  it should "take into account any offsets" in {
+    u(0.0, "C").as("K").toDouble should be (273.15 plusOrMinus 0.001)
+    u(273.15, "K").as("C").toDouble should be (0.0 plusOrMinus 0.001)
+
+    u(20.0, "F").as("K").toDouble should be (266.483 plusOrMinus 0.001)
+    u(266.483, "K").as("F").toDouble should be (20.0 plusOrMinus 0.001)
+
+    u(-40.0, "C").as("F").toDouble should be (-40.0 plusOrMinus 0.001)
+    u(-40.0, "F").as("C").toDouble should be (-40.0 plusOrMinus 0.001)
+  }
+
 }

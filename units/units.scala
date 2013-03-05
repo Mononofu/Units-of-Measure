@@ -21,3 +21,7 @@ trait Dyne extends MyUnit("Dyne", "dyn", (1, "g*cm/s^2"))
 
 trait Radian extends MyUnit("Radian", "rad", (1, "1"))
 trait Degree extends MyUnit("Degree", "deg", (3.1416/180., "rad"))
+
+trait Kelvin extends MyUnit("Kelvin", "K")
+trait Celsius extends MyUnit("Celsius", "C", (1, "K"), 273.15)
+trait Fahrenheit extends MyUnit("Fahrenheit", "F", (5.0/9.0, "C"), -32.0)
