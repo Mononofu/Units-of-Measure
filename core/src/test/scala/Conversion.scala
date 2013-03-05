@@ -35,4 +35,10 @@ class ConversionSpec extends FlatSpec with ShouldMatchers {
     u(-40.0, "F").as("C").toDouble should be (-40.0 plusOrMinus 0.001)
   }
 
+  it should "work on various derived units" in {
+    (u(10, "V") / u(5, "ohm")).as("A").unit should be ("A")
+    (u(10, "V") / u(5, "ohm")).as("A").toInt should be (2)
+
+  }
+
 }

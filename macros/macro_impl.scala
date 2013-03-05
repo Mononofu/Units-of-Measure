@@ -199,6 +199,7 @@ object MeasureImpl {
     val treeTarget = compute_unit(c)(unitEx)
     val typeTarget = TypeParser.parse(treeTarget.toString.replace("$", ""))
 
+
     // purge units that occur in both source and target
     var leftoverUnits: List[GeneralUnit] = List()
     var targetUnits = typeTarget.toList
@@ -216,40 +217,36 @@ object MeasureImpl {
     var targetUnitsBase = ListBuffer[GeneralUnit]()
     var sourceUnitsBase = ListBuffer[GeneralUnit]()
 
-    def getBase(unitEx: String, op: (Double, Double, Double) => Double): (Seq[GeneralUnit], Double, Double) = {
+    def getBase(unitEx: String, combineOffsets: (Double, Double, Double) => Double):
+      (Seq[GeneralUnit], Double, Double) = {
       val base: Seq[(Seq[GeneralUnit], Double, Double)] = UnitParser(c).parseToUnitList(unitEx).map {
         case long => lookupBaseUnit(c, long.name) match {
           case None => (List(long), 1.0, 0.0)
           case Some((shortBaseEx, newFactor, newOffset)) =>
-            val (units, factor, offset) = getBase(shortBaseEx, op)
-            println(s"\tbase for $long")
-            println(s"$newFactor - $newOffset")
-            println(s"$factor - $offset")
-            println("new approach:")
-            println(s"${op(newOffset, offset, newFactor)}")
-            println(units)
-            (units.map(u => SUnit(u.name, u.power * long.power)),
-             newFactor * factor,
-             op(newOffset, offset, newFactor))
+            val (units, factor, offset) = getBase(shortBaseEx, combineOffsets)
+            println(s"- base units for $unitEx - $long: $shortBaseEx with $newFactor")
+            val correctedUnits = units.map(u => SUnit(u.name, u.power * long.power))
+            println(s"  $correctedUnits with $factor")
+            println(s"  Math.pow($factor, ${long.power}) * $newFactor = ")
+            println(s"    ${Math.pow(factor, long.power) * newFactor}")
+            (correctedUnits,
+             Math.pow(factor, long.power) * newFactor,
+             combineOffsets(newOffset, offset, newFactor))
         }
       }
       val factor = base.map(_._2).reduce(_ * _)
       val units = base.flatMap(_._1)
-      println(base.map(_._3))
       val offset = base.map(_._3).reduce(_ + _)
       (units, factor, offset)
     }
 
     def combineOffsetTargetUnits(oldOffset: Double, newOffset: Double, factor: Double) = {
-      println(s"converting target units: ($newOffset) / $factor - $oldOffset = ${(newOffset) / factor - oldOffset}")
       newOffset / factor - oldOffset
     }
 
     def combineOffsetSourceUnits(oldOffset: Double, newOffset: Double, factor: Double) = {
-      println(s"converting source units: $oldOffset * $factor + $newOffset")
       oldOffset * factor + newOffset
     }
-
 
     def processUnits(src: Seq[GeneralUnit], dst: ListBuffer[GeneralUnit],
       baseOffOp: (Double, Double, Double) => Double): (Double, Double) = {
@@ -257,21 +254,22 @@ object MeasureImpl {
       var totalOffset = 0.0
       for(u <- src) {
         val short = lookupLongUnit(c, u.name)
-        val (baseUnits, factor, offset) = getBase(short, baseOffOp)
-        println(s"offset: $offset")
-        baseUnits.foreach(v => dst += SUnit(v.name, u.power * v.power))
+        val (baseUnits, factor, offset) = getBase(s"$short^${u.power}", baseOffOp)
+        baseUnits.foreach(v => dst += v)
         totalOffset += offset
         totalFactor *= factor
       }
       (totalFactor, totalOffset)
     }
 
+    println()
+    println("===== start of conversion")
     val (targetFactor, targetOffset) = processUnits(targetUnits, targetUnitsBase,
       combineOffsetTargetUnits)
     val (sourceFactor, sourceOffset) = processUnits(leftoverUnits, sourceUnitsBase,
       combineOffsetSourceUnits)
 
-    if(sourceUnitsBase.toList.sortBy(_.name) != targetUnitsBase.toList.sortBy(_.name)) {
+    if(simplify(sourceUnitsBase) != simplify(targetUnitsBase)) {
       c.abort(c.enclosingPosition, s"couldn't convert Measure - incompatible units: $sourceUnitsBase, $targetUnitsBase")
     }
 

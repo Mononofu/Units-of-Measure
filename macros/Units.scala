@@ -19,7 +19,10 @@ abstract class GeneralUnit {
     throw new Exception(s"invalid state, toTree called on $this")
 }
 case class SUnit[U, D <: Dimension](override val name: String, override val power: Int = 1) extends GeneralUnit {
-  override def toString = name
+  override def toString = power match {
+    case 1 => name
+    case n => s"$name^$n"
+  }
   override def equals(that: Any) = that match {
     case SUnit(n, p) => n == name && p == power
     case _ => false
