@@ -21,11 +21,11 @@ object CreateUnitMacros {
 
   import Helpers.packageName
 
-  def createImpl(c: Context)(long: c.Expr[String], short: c.Expr[String]): c.Tree = {
+  def createImpl(c: Context)(short: c.Expr[String]): c.Tree = {
     import c.universe._
     val Template(_, _, existingCode) = c.enclosingTemplate
 
-    val longName = extractString[c.type](c)(long)
+    val longName: String = c.enclosingImpl.name.toString
     val shortName = extractString[c.type](c)(short)
 
     val classNameShort = newTypeName(s"Translate$$$shortName")
@@ -40,19 +40,19 @@ object CreateUnitMacros {
   }
 
   def createImplConv(c: Context)
-    (long: c.Expr[String], short: c.Expr[String], base: c.Expr[(Double, String)]): c.Tree = {
+    (short: c.Expr[String], base: c.Expr[(Double, String)]): c.Tree = {
     import c.universe._
-    createImplConvOff(c)(long, short, base, c.Expr(Literal(Constant(0.0))))
+    createImplConvOff(c)(short, base, c.Expr(Literal(Constant(0.0))))
   }
 
 
   def createImplConvOff(c: Context)
-    (long: c.Expr[String], short: c.Expr[String],
+    (short: c.Expr[String],
       base: c.Expr[(Double, String)], offsetEx: c.Expr[Double]): c.Tree = {
     import c.universe._
     val Template(_, _, existingCode) = c.enclosingTemplate
 
-    val longName = extractString[c.type](c)(long)
+    val longName: String = c.enclosingImpl.name.toString
     val shortName = extractString[c.type](c)(short)
     val (baseName: String, factor: Double) = base match {
       case Expr(Apply(_, List(Literal(Constant(f: Double)), Literal(Constant(n))))) => (n.toString, f.toDouble)
@@ -74,11 +74,11 @@ object CreateUnitMacros {
     Template(Nil, emptyValDef, existingCode )
   }
 
-  type MyUnit(long: String, short: String) = macro createImpl
+  type NewUnit(short: String) = macro createImpl
 
-  type MyUnit(long: String, short: String, base: (Double, String)) =
+  type NewUnit(short: String, base: (Double, String)) =
     macro createImplConv
 
-  type MyUnit(long: String, short: String, base: (Double, String), offsetEx: Double) =
+  type NewUnit(short: String, base: (Double, String), offsetEx: Double) =
     macro createImplConvOff
 }
