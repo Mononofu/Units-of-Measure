@@ -9,10 +9,10 @@ trait Kilogram extends MyUnit("Kilogram", "kg", (1000, "g"))
 trait Second extends MyUnit("Second", "s")
 trait Ampere extends MyUnit("Ampere", "A")
 trait Kelvin extends MyUnit("Kelvin", "K")
-// mole
-// candela
+trait Mole extends MyUnit("Mole", "mol")
+trait Candela extends MyUnit("Candela", "cd")
 
-
+// derived units
 trait Gram extends MyUnit("Gram", "g")
 
 trait Kilometer extends MyUnit("Kilometer", "km", (1000, "m"))
@@ -35,3 +35,5 @@ trait Fahrenheit extends MyUnit("Fahrenheit", "F", (5.0/9.0, "C"), -32.0)
 trait Volt extends MyUnit("Volt", "V", (1, "kg*m^2 / (A*s^3)"))
 trait Ohm extends MyUnit("Ohm", "ohm", (1, "kg*m^2 / (A^2*s^3)"))
 trait Watt extends MyUnit("Watt", "W", (1, "kg m^2 s^-3"))
+
+trait Joule extends MyUnit("Joule", "J", (1, "kg m^2 s^-2"))

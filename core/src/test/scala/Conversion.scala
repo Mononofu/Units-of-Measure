@@ -48,4 +48,9 @@ class ConversionSpec extends FlatSpec with ShouldMatchers {
     (u(5, "V") * u(15, "V") / u(3, "ohm")).as("W").toInt should be (25)
   }
 
+  it should "be able to convert between energy and matter :D" in {
+    (u(1.0, "g") * u(2.998e8, "m/s") * u(2.998e8, "m/s")).as("J").toDouble should be (
+      8.988e13 plusOrMinus 1e10)
+  }
+
 }
