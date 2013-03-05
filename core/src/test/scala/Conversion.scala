@@ -36,9 +36,16 @@ class ConversionSpec extends FlatSpec with ShouldMatchers {
   }
 
   it should "work on various derived units" in {
+    // ohm's law
     (u(10, "V") / u(5, "ohm")).as("A").unit should be ("A")
     (u(10, "V") / u(5, "ohm")).as("A").toInt should be (2)
 
+    // power from resistance
+    (u(5, "A") * u(5, "A") * u(2, "ohm")).as("W").unit should be ("W")
+    (u(5, "A") * u(5, "A") * u(2, "ohm")).as("W").toInt should be (50)
+
+    (u(5, "V") * u(15, "V") / u(3, "ohm")).as("W").unit should be ("W")
+    (u(5, "V") * u(15, "V") / u(3, "ohm")).as("W").toInt should be (25)
   }
 
 }
