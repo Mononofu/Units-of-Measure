@@ -224,11 +224,7 @@ object MeasureImpl {
           case None => (List(long), 1.0, 0.0)
           case Some((shortBaseEx, newFactor, newOffset)) =>
             val (units, factor, offset) = getBase(shortBaseEx, combineOffsets)
-            println(s"- base units for $unitEx - $long: $shortBaseEx with $newFactor")
             val correctedUnits = units.map(u => SUnit(u.name, u.power * long.power))
-            println(s"  $correctedUnits with $factor")
-            println(s"  Math.pow($factor, ${long.power}) * $newFactor = ")
-            println(s"    ${Math.pow(factor, long.power) * newFactor}")
             (correctedUnits,
              Math.pow(factor, long.power) * newFactor,
              combineOffsets(newOffset, offset, newFactor))
@@ -262,8 +258,6 @@ object MeasureImpl {
       (totalFactor, totalOffset)
     }
 
-    println()
-    println("===== start of conversion")
     val (targetFactor, targetOffset) = processUnits(targetUnits, targetUnitsBase,
       combineOffsetTargetUnits)
     val (sourceFactor, sourceOffset) = processUnits(leftoverUnits, sourceUnitsBase,

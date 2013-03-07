@@ -31,6 +31,7 @@ class Measure[T, N: Numeric](val n: N)(implicit num: Numeric[N]) {
   def asLong = new MeasureLong[T](n.toInt)
   def asFloat =  new MeasureFloat[T](n.toFloat)
   def asDouble = new MeasureDouble[T](n.toDouble)
+  def asType[U: Numeric](conv: N => U) = new Measure[T, U](conv(n))
 
   def as(unitEx: String)(implicit tag: WeakTypeTag[T]) = macro MeasureImpl.as_impl[T]
   def unit(implicit tag: WeakTypeTag[T]) = macro MeasureImpl.get_unit_impl[T]
