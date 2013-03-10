@@ -8,7 +8,7 @@ class Precomputer[C <: Context](val c: C) {
   val evals = ListBuffer[ValDef]()
 
   def compute(value: c.Tree): Ident = {
-    val freshName = newTermName(c.fresh("eval$"))
+    val freshName = TermName(c.freshName("eval$"))
     evals += ValDef(Modifiers(), freshName, TypeTree(value.tpe), value)
     Ident(freshName)
   }

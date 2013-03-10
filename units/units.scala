@@ -27,7 +27,7 @@ trait Newton extends NewUnit("N", (1, "kg*m/s^2"))
 trait Dyne extends NewUnit("dyn", (1, "g*cm/s^2"))
 
 trait Radian extends NewUnit("rad", (1, "1"))
-trait Degree extends NewUnit("deg", (Math.PI/180., "rad"))
+trait Degree extends NewUnit("deg", (Math.PI/180.0, "rad"))
 
 trait Celsius extends NewUnit("C", (1, "K"), 273.15)
 trait Fahrenheit extends NewUnit("F", (5.0/9.0, "C"), -32.0)

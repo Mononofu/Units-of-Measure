@@ -26,9 +26,8 @@ object Helpers {
   }
 
   def extractConstant[C <: Context, T](c: C)(s: c.universe.Tree): T = s match {
-    case c.universe.Literal(c.universe.Constant(longName)) => longName match {
-      case s: T => s
-    }
+    case c.universe.Literal(c.universe.Constant(longName)) => longName.asInstanceOf[T]
+    case _ => c.abort(c.enclosingPosition, s"expected constant")
   }
 
   def lookupShortUnit[C <: Context](c: C, short: String): String = {
@@ -159,31 +158,31 @@ object MeasureImpl {
   def u_unit_impl(c: Context)(unitEx: c.Expr[String], tpeEx: c.Expr[Type]): c.Tree = {
     val parsedUnit = compute_unit(c)(unitEx)
     import c.universe._
-    AppliedTypeTree( Ident(newTypeName("Measure")), List( parsedUnit ) )
+    AppliedTypeTree( Ident( TypeName("Measure")), List( parsedUnit ) )
   }
 
   def u_unit_int_impl(c: Context)(unitEx: c.Expr[String]): c.Tree = {
     val parsedUnit = compute_unit(c)(unitEx)
     import c.universe._
-    AppliedTypeTree( Ident(newTypeName("MeasureInt")), List( parsedUnit ) )
+    AppliedTypeTree( Ident( TypeName("MeasureInt")), List( parsedUnit ) )
   }
 
   def u_unit_long_impl(c: Context)(unitEx: c.Expr[String]): c.Tree = {
     val parsedUnit = compute_unit(c)(unitEx)
     import c.universe._
-    AppliedTypeTree( Ident(newTypeName("MeasureLong")), List( parsedUnit ) )
+    AppliedTypeTree( Ident( TypeName("MeasureLong")), List( parsedUnit ) )
   }
 
   def u_unit_float_impl(c: Context)(unitEx: c.Expr[String]): c.Tree = {
     val parsedUnit = compute_unit(c)(unitEx)
     import c.universe._
-    AppliedTypeTree( Ident(newTypeName("MeasureFloat")), List( parsedUnit ) )
+    AppliedTypeTree( Ident( TypeName("MeasureFloat")), List( parsedUnit ) )
   }
 
   def u_unit_double_impl(c: Context)(unitEx: c.Expr[String]): c.Tree = {
     val parsedUnit = compute_unit(c)(unitEx)
     import c.universe._
-    AppliedTypeTree( Ident(newTypeName("MeasureDouble")), List( parsedUnit ) )
+    AppliedTypeTree( Ident( TypeName("MeasureDouble")), List( parsedUnit ) )
   }
 
 

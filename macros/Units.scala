@@ -34,14 +34,14 @@ case class SUnit[U, D <: Dimension](override val name: String, override val powe
   }
 
   override def toTree(c: Context): c.universe.Tree = c.universe.AppliedTypeTree(
-          c.universe.Ident(c.universe.newTypeName("SUnit")),
-          List(c.universe.Ident(c.universe.newTypeName(name)),
-               c.universe.Ident(c.universe.newTypeName(dimName))))
+          c.universe.Ident(c.universe.TypeName("SUnit")),
+          List(c.universe.Ident(c.universe.TypeName(name)),
+               c.universe.Ident(c.universe.TypeName(dimName))))
 
   override def invert = SUnit(name, -power)
 }
 case class CUnit[U, V](unit: GeneralUnit, next: GeneralUnit) extends GeneralUnit {
   override def toTree(c: Context): c.universe.Tree = c.universe.AppliedTypeTree(
-          c.universe.Ident(c.universe.newTypeName("CUnit")),
+          c.universe.Ident(c.universe.TypeName("CUnit")),
           List(unit.toTree(c), next.toTree(c)))
 }

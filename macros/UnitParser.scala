@@ -22,6 +22,7 @@ case class UnitParser[C <: Context](c: C) extends JavaTokenParsers with PackratP
     case ("*"~x) :: xs => x ++ toTypenames(xs)
     case (""~x) :: xs => x ++ toTypenames(xs)
     case ("/"~x) :: xs => x.map(_.invert) ++ toTypenames(xs)
+    case (op~x) :: xs => c.abort(c.enclosingPosition, s"unexpected operator $op")
   }
 
   def power(t: List[GeneralUnit], n: Int): List[GeneralUnit] = n match {

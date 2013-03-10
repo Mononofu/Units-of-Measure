@@ -7,6 +7,7 @@ import Helpers._
 object TypeParser extends JavaTokenParsers {
   def parse(in: String) = parseAll(typename, in) match {
     case Success(r, _) => simplify(r)
+    case _ => throw new Exception(s"failed to parse type expression: $in")
   }
 
   def dimValue(dim: String) = dim match {
