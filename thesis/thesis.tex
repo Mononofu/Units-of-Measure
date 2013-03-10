@@ -27,9 +27,6 @@
 \usepackage{amsthm}
 \usepackage[official]{eurosym}
 \usepackage{setspace}
-\newtheorem{definition}{Definition}
-\newtheorem{satz}{Theorem}
-\theoremstyle{definition}
 %Zitieren
 \usepackage[longnamesfirst, authoryear]{natbib}
 \usepackage{minted}
@@ -454,13 +451,34 @@ Construction of ASTs by hand is often very cumbersome. Luckily, there is a solut
 
 \section{Value Classes}
 
+On the Java Virtual Machine (JVM), optimal arithmetic performance is only possible with primitive data types. The downside is that they can't store any additional information, not even at compile time, since they don't accept type parameters.
+Scala's value classes offer a solution to this problem. Value classes are a compile time wrapper around other types - similar to Haskell's \verb|newtype|. They also share the same limitations - a value class can only have a single field, type information is not available at runtime, etc.
 
+Luckily, that's all that's needed for a Units of Measure system - unit information is available at compile time in the form of type parameters, and at runtime, performance is equal to normal primitives.
 
-achieving 0-overhead
 
 \section{Parser Combinators}
 
-parsing unit expressions from the helper macros and Measure type parameters
+Parser Combinators make it very easy to write parsers for custom Domain Specific Languages (DSLs). For the Units of Measure library it was necessary to parse unit expressions similar to \verb|m / s^2|, as well as some internal parsing of type parameters. As their name implies, parser combinators are build from parsers (constant strings, regular expressions) that are combined with special combinators: repetition and alternatives. \citep{Spiewak09}
+
+Such a parser is very close to the EBNF of the grammar it's supposed to parsed, allowing for an intuitive understanding of its purpose. For a short sample, see Figure \ref{code:scala_parse}
+
+\begin{figure}
+\begin{minted}{scala}
+lazy val term: PackratParser[List[GeneralUnit]] =
+  longFactor~rep(("*"|"/"|"")~longFactor) ^^ {
+    case t~Nil => t
+    case t~l => t ++ toTypenames(l) }
+lazy val longFactor: PackratParser[List[GeneralUnit]] = (
+    shortFactor~"^"~wholeNumber ^^ { case t~"^"~n => power(t, n.toInt) }
+  | shortFactor )
+lazy val shortFactor: PackratParser[List[GeneralUnit]] = (
+    unitname ^^ { case u => List(SUnit(u)) }
+  | "("~>term<~")" )
+\end{minted}
+\caption{Part of a parser for unit expressions, built with Parser Combinators.}
+\label{code:scala_parse}
+\end{figure}
 
 \chapter{Usage}
 
