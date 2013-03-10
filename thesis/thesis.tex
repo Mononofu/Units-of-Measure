@@ -390,13 +390,71 @@ The implementation of my Units of Measure system rests on a few cornerstones tha
 
 \section{Macros in Scala}
 
-basic principles
+Macros are what make a lot of the features of my Units of Measure system even possible in the first place. Fundamentally, macros in Scala are nothing more than normal functions that are executed by the compiler. Any arguments will be passed as abstract syntax trees (AST), and the result of the macro (another AST) is used in place of the original macro call. Those ASTs are the same data structures used by the compiler internally, and access to more specific APIs is possible using a special \verb|Context| object. I will cover the most relevant features here, for a full documentation please refer to \citep{Eugene13}.
+
+For an example of a simple macro see Figure \ref{code:scala_macro} - macros in Scala don't use any special syntax, expect for the \verb|macro| keyword that tells the compiler that the current function is really a macro.
+
+
+
+\begin{figure}
+\begin{minted}{scala}
+/* macro stub */
+def u(nEx: Int, unitEx: String) = macro u_int_impl
+
+/* macro implementation */
+def u_int_impl(c: Context)
+      (nEx: c.Expr[Int], unitEx: c.Expr[String]): c.Expr[Any] = {
+  import c.universe._
+  val comp = new Precomputer[c.type](c)
+  val nID = comp.compute(nEx.tree)
+  val parsedUnit = compute_unit(c)(unitEx)
+  c.Expr(Block(comp.evals.toList, q"new MeasureInt[$parsedUnit]($nID)"))
+}
+\end{minted}
+\caption{Scala macros always consist of two parts: The macro implementation itself - a scala function that takes AST expressions as arguments and returns a new AST - and the macro stub that references the actual implementation with the special macro keyword.}
+\label{code:scala_macro}
+\end{figure}
+
 
 \subsection{Context and the Universe}
+
+As mentioned above, the compiler API is exposed to the programmer using a special object, \verb|scala.reflect.macros.Context|, that every macro needs to accept as a parameter. As an example, the \verb|c: Context| object can be used to introduce new top-level classes (\verb|c.introduceTopLevel(packageName, classTree)|), raise compiler errors (\verb|c.abort(c.enclosingPosition, "error here")|) or search for already existing classes (\verb|c.mirror.staticClass(className)|). I use this API heavily to introduce new classes to store bookkeeping information about units, as well as to provide concise messages in case of errors.
+
+Additionally, this includes the reflection API as a subpart, accessible via \verb|c.universe|. This API makes building (case classes) and deconstructing (via pattern matching) ASTs very easy.
+
 \subsection{Type Macros}
-defining custom units and storing book-keeping information
+
+Often, simple macro functions are not enough, especially to use macros in unorthodox positions. In my case, a helper macro for type definitions is necessary to make use of my library viable. In practice, type macros are very similar to normal macros - there are only two major differences: The macro stub is declared as a new type with \verb|type| instead of a new function with \verb|def|, and it returns a \verb|c.Tree| instead of a \verb|c.Expr|. For a short sample taken from my project see Figure \ref{code:scala_macro}.
+
+Such type macros can be used anywhere a normal type can be used and can perform arbitrary calculations (including reading database schemata from disk or a remote server!).
+
+\begin{figure}
+\begin{minted}{scala}
+/* macro stub */
+type u_i(unitEx: String) = macro u_unit_int_impl
+
+/* macro implementation */
+def u_unit_int_impl(c: Context)(unitEx: c.Expr[String]): c.Tree = {
+  val parsedUnit = compute_unit(c)(unitEx)
+  import c.universe._
+  AppliedTypeTree( Ident( TypeName("MeasureInt")), List( parsedUnit ) )
+}
+\end{minted}
+\caption{Example of a type macro. Note that it is very similar to a normal macro, but returns a Tree instead of an Expression.}
+\label{code:scala_typemacro}
+\end{figure}
+
+\subsection{Quasiquotes}
+
+Construction of ASTs by hand is often very cumbersome. Luckily, there is a solution in the form of quasiquotes. They allow the user to write ASTs with normal Scala syntax, without knowing the internal data types used by the compiler. They also support substitution with \verb|$|, allowing for very concise Tree creation:
+
+\verb|q"@macroimpl.LongName(n = $longName) class $classNameShort"|
+
+
 
 \section{Value Classes}
+
+
 
 achieving 0-overhead
 
@@ -408,6 +466,8 @@ parsing unit expressions from the helper macros and Measure type parameters
 
 \section{Defining Units}
 \section{Arithmetic with Measures}
+
+\chapter{Benchmarks}
 
 \chapter{Future Work}
 
