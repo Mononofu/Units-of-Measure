@@ -16,6 +16,8 @@ class MeasureFloat[T](val n: Float) extends AnyVal {
     macro MeasureFloatImpl.multiplication_impl[T, U]
   def /[U](that: MeasureFloat[U])(implicit tag: WeakTypeTag[T], tag2: WeakTypeTag[U]) =
     macro MeasureFloatImpl.division_impl[T, U]
+  def **[U](that: Int)(implicit tag: WeakTypeTag[T]) =
+    macro MeasureFloatImpl.exponentiation_impl[T]
 
   def toInt = n.toInt
   def toLong = n.toLong
@@ -92,5 +94,30 @@ object MeasureFloatImpl {
     val (aID, bID) = (comp.compute(c.prefix.tree), comp.compute(that.tree))
 
     c.Expr(Block(comp.evals.toList, q"new MeasureFloat[$resultType]($aID.n / $bID.n)"))
+  }
+
+  def exponentiation_impl[T: c.WeakTypeTag]
+    (c: Context)
+    (that: c.Expr[Int])
+    (tag: c.Expr[WeakTypeTag[T]]): c.Expr[Any] = {
+    import c.universe._
+
+    val typeA = parseType(c)(tag.actualType)
+    val power = that match {
+      case Expr(Literal(Constant(n: Int))) => n
+      case _ => c.abort(c.enclosingPosition, "can only raise Measure to integral powers")
+    }
+
+    val resultType = combine((1 to power).flatMap(_ => typeA)).toTree(c)
+
+    val comp = new Precomputer[c.type](c)
+    val aID = comp.compute(c.prefix.tree)
+    val exp = if(power == 1) {
+      q"$aID.n"
+    } else {
+      (2 to power).map(_ => q"$aID.n").foldLeft[c.Tree](q"$aID.n")( (a, b) => q"$a * $b")
+    }
+
+    c.Expr(Block(comp.evals.toList, q"new MeasureFloat[$resultType]($exp)"))
   }
 }

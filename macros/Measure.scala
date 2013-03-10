@@ -20,6 +20,8 @@ class Measure[T, N: Numeric](val n: N)(implicit num: Numeric[N]) {
     macro MeasureGenericImpl.multiplication_impl[T, U]
   def /[U](that: Measure[U, N])(implicit tag: WeakTypeTag[T], tag2: WeakTypeTag[U]) =
     macro MeasureGenericImpl.division_impl[T, U]
+  def **[U](that: Int)(implicit tag: WeakTypeTag[T]) =
+    macro MeasureGenericImpl.exponentiation_impl[T]
 
   import num.mkNumericOps
   def toInt = n
@@ -103,6 +105,31 @@ def addition_impl[T: c.WeakTypeTag, U: c.WeakTypeTag]
     val (aID, bID) = (comp.compute(c.prefix.tree), comp.compute(that.tree))
 
     c.Expr(Block(comp.evals.toList, q"new Measure[$resultType]($aID.n / $bID.n)"))
+  }
+
+  def exponentiation_impl[T: c.WeakTypeTag]
+    (c: Context)
+    (that: c.Expr[Int])
+    (tag: c.Expr[WeakTypeTag[T]]): c.Expr[Any] = {
+    import c.universe._
+
+    val typeA = parseType(c)(tag.actualType)
+    val power = that match {
+      case Expr(Literal(Constant(n: Int))) => n
+      case _ => c.abort(c.enclosingPosition, "can only raise Measure to integral powers")
+    }
+
+    val resultType = combine((1 to power).flatMap(_ => typeA)).toTree(c)
+
+    val comp = new Precomputer[c.type](c)
+    val aID = comp.compute(c.prefix.tree)
+    val exp = if(power == 1) {
+      q"$aID.n"
+    } else {
+      (2 to power).map(_ => q"$aID.n").foldLeft[c.Tree](q"$aID.n")( (a, b) => q"$a * $b")
+    }
+
+    c.Expr(Block(comp.evals.toList, q"new Measure[$resultType]($exp)"))
   }
 
 }

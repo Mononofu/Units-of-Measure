@@ -28,11 +28,11 @@ object CreateUnitMacros {
     val longName: String = c.enclosingImpl.name.toString
     val shortName = extractString[c.type](c)(short)
 
-    val classNameShort = newTypeName(s"Translate$$$shortName")
+    val classNameShort = newTypeName(s"TranslateShort$$$shortName")
     val unitLookupShort = q"@macroimpl.LongName(n = $longName) class $classNameShort"
     c.introduceTopLevel(packageName, unitLookupShort)
 
-    val classNameLong = newTypeName(s"Translate$$$longName")
+    val classNameLong = newTypeName(s"TranslateLong$$$longName")
     val unitLookupLong = q"@macroimpl.ShortName(n = $shortName) class $classNameLong"
     c.introduceTopLevel(packageName, unitLookupLong)
 
@@ -63,11 +63,11 @@ object CreateUnitMacros {
       case _ => c.abort(c.enclosingPosition, "offset has to be a constant value")
     }
 
-    val classNameShort = newTypeName(s"Translate$$$shortName")
+    val classNameShort = newTypeName(s"TranslateShort$$$shortName")
     val unitLookupShort = q"@macroimpl.LongName(n = $longName) @macroimpl.BaseUnit(name = $baseName, factor = $factor, offset = $offset) class $classNameShort"
     c.introduceTopLevel(packageName, unitLookupShort)
 
-    val classNameLong = newTypeName(s"Translate$$$longName")
+    val classNameLong = newTypeName(s"TranslateLong$$$longName")
     val unitLookupLong = q"@macroimpl.ShortName(n = $shortName) @macroimpl.BaseUnit(name = $baseName, factor = $factor, offset = $offset) class $classNameLong"
     c.introduceTopLevel(packageName, unitLookupLong)
 
