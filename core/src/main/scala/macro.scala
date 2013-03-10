@@ -54,7 +54,7 @@ object Main extends App {
   // type error
   // println("e + (b * h): " + (e + (b * h)))
 
-  val numRuns = 20
+  val numRuns = 40
   val runSize = 1000000
 
   val benchmarks = List(
@@ -69,7 +69,7 @@ object Main extends App {
     var addTime = List[Double]()
     var mulTime = List[Double]()
 
-    for(i <- 1 to 10) {
+    for(i <- 1 to 30) {
       val (add, mul) = benchmark.bench(numRuns, runSize, true)
       addTime ::= add.sum * 1.0 / add.length
       mulTime ::= mul.sum * 1.0 / mul.length

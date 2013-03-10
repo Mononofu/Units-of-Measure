@@ -17,6 +17,7 @@ object Utility {
 
 abstract class Bench {
   def init(length: Int)
+  def destroy()
   def runAdd(length: Int)
   def runMul(length: Int)
   def bench(runs: Int, length: Int, silent: Boolean = false) = {
@@ -30,12 +31,13 @@ abstract class Bench {
     val perOpAdd = timingsAdd.sum * 1e6 / (timingsAdd.length * length)
     if(!silent) println(f"$perOpAdd%5.2f ns per addition,       fastest run ${timingsAdd.min}, slowest ${timingsAdd.max}")
 
-    (1 to 10).foreach(_ => runMul(length))
+    (1 to 5).foreach(_ => runMul(length))
     val timingsMulRaw = (1 to runs).map(_ => time { runMul(length) } )
     val timingsMul = timingsMulRaw.filter(_ < 2 * timingsMulRaw.sum / runs)
     val perOpMul = timingsMul.sum * 1e6 / (timingsMul.length * length)
     if(!silent) println(f"$perOpMul%5.2f ns per multiplication, fastest run ${timingsMul.min}, slowest ${timingsMul.max}")
     if(!silent) println()
+    destroy()
     (timingsAdd, timingsMul)
   }
 
@@ -79,6 +81,13 @@ class BenchIntFlat extends Bench {
     d = new Array[Int](length)
   }
 
+  def destroy() {
+    a = null
+    b = null
+    c = null
+    d = null
+  }
+
   def runAdd(length: Int) {
     var i = 0
     while(i < length) {
@@ -117,6 +126,13 @@ class BenchDoubleFlat extends Bench {
     b = (1 to length).map(i => Vector4D(i, i, i, i)).toArray
     c = new Array[ Vector4D ](length)
     d = new Array[Double](length)
+  }
+
+  def destroy() {
+    a = null
+    b = null
+    c = null
+    d = null
   }
 
   def runAdd(length: Int) {
@@ -158,6 +174,13 @@ class BenchMeasure extends Bench {
     }
   }
 
+  def destroy() {
+    a = null
+    b = null
+    c = null
+    d = null
+  }
+
   def runAdd(length: Int) {
     var i = 0
     while(i < length) {
@@ -197,6 +220,13 @@ class BenchMeasureIntMacro extends Bench {
     }
   }
 
+  def destroy() {
+    a = null
+    b = null
+    c = null
+    d = null
+  }
+
   def runAdd(length: Int) {
     var i = 0
     while(i < length) {
@@ -232,6 +262,13 @@ class BenchMeasureDoubleMacro extends Bench {
       b(i.toInt) = Vector4GD(u(i, "m"), u(i, "m"), u(i, "m"), u(i, "m"))
       i+=1
     }
+  }
+
+  def destroy() {
+    a = null
+    b = null
+    c = null
+    d = null
   }
 
   def runAdd(length: Int) {
