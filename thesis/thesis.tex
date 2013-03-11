@@ -486,42 +486,17 @@ lazy val shortFactor: PackratParser[List[GeneralUnit]] = (
 \section{Arithmetic with Measures}
 
 \chapter{Benchmarks}
+\label{cha:bench}
 
 To make sure my implementation actually achieves the raw performance I am aiming for, I wrote a simple benchmark suite to compare primitive data types against my own Measures. The benchmark tests two simple operations, vector addition and dot product. To lessen the impact of overhead costs and concentrate on the performance of the arithmetic operations, all benchmarks are run on an array of 2 million vectors. A single run of a benchmark consists of 20 runs through such an array. To calculate the median runtime for each operation as well as a confidence interval ($\alpha = 0.05$), 30 runs are performed for each implementation.
 
-As can be seen in table \ref{bench:scala_measures}, for addition there is no significant difference between the performance of primitive data types and Measures annotated with unit information. There is a slowdown for multiplication (about 40 \%).
+As can be seen in table \ref{bench:scala_measures}, for addition there is no significant difference between the performance of primitive data types and Measures annotated with unit information. There is a slowdown for multiplication (about 40 \%), but it is small compared to performance of boxed types.
 
-
-%   Benchmarked class macros.BenchIntFlat
-%  9.78 - 11.08 - 14.49 11.08
-% [10.72, 11.44]
-%  5.90 -  6.98 -  8.25  7.04
-% [ 6.92,  7.16]
-%   Benchmarked class macros.BenchMeasure
-%  9.82 - 11.00 - 11.73 10.78
-% [10.66, 10.91]
-%  9.21 - 10.64 - 11.56 10.49
-% [10.30, 10.68]
-%   Benchmarked class macros.BenchMeasureIntMacro
-%  9.41 - 10.59 - 12.00 10.58
-% [10.46, 10.70]
-%  7.90 -  9.89 - 11.16  9.74
-% [ 9.49,  9.99]
-%   Benchmarked class macros.BenchDoubleFlat
-% 13.18 - 15.21 - 22.46 15.39
-% [14.34, 16.44]
-%  7.48 -  8.63 - 10.20  8.72
-% [ 8.54,  8.91]
-%   Benchmarked class macros.BenchMeasureDoubleMacro
-% 13.83 - 15.34 - 17.57 15.30
-% [14.93, 15.67]
-% 11.32 - 12.58 - 14.55 12.67
-% [12.36, 12.99]
 
 
 \begin{figure}
 \begin{tabular}{lrrrr}
-type            & int      & MeasureInt  & double    & MeasureDouble \\
+Type            & int      & MeasureInt  & double    & MeasureDouble \\
 \midrule
 addition        & 11.08 ns &  10.59 ns   &  15.21 ns &  15.34 ns             \\
 dot product     &  6.98 ns &   9.89 ns   &   8.63 ns &  12.58 ns
@@ -529,6 +504,17 @@ dot product     &  6.98 ns &   9.89 ns   &   8.63 ns &  12.58 ns
 \caption{Median runtime of arithmetic operations for different data types, per operation.}
 \label{bench:scala_measures}
 \end{figure}
+
+
+\begin{figure*}[htb]
+\centering
+\includegraphics[width=0.49\textwidth]{boxplot_add.png}
+\includegraphics[width=0.49\textwidth]{boxplot_mul.png}
+\caption{Runtime for addition and dot product, measured with the methodology described in Chapter \ref{cha:bench}. For addition, there is no significant difference between primitives and Measures, whereas for multiplication, there is a 40\% slowdown.}
+\label{fig:rome}
+\end{figure*}
+
+
 
 
 \chapter{Future Work}

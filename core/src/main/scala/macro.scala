@@ -106,11 +106,12 @@ object Main extends App {
     val mulTimeIntervalSize = mulTimeVar / Math.sqrt(mulTime.length) * t(mulTime.length - 1)
 
     println(s"\tBenchmarked ${benchmark.getClass}")
-    println(f"${addTime.min}%5.2f - ${addTime(addTime.length / 2)}%5.2f - ${addTime.max}%5.2f\t$addTimeMean%5.2f")
+    println(f"${addTime.min}%5.2f - ${addTime((addTime.length * 0.25).toInt)}%5.2f - ${addTime(addTime.length / 2)}%5.2f - ${addTime((addTime.length * 0.75).toInt)}%5.2f - ${addTime.max}%5.2f\t$addTimeMean%5.2f")
     println(f"[${addTimeMean - addTimeIntervalSize}%5.2f, ${addTimeMean + addTimeIntervalSize}%5.2f]")
-    println(f"${mulTime.min}%5.2f - ${mulTime(mulTime.length / 2)}%5.2f - ${mulTime.max}%5.2f\t$mulTimeMean%5.2f")
+    println(f"${mulTime.min}%5.2f - ${mulTime((mulTime.length * 0.25).toInt)}%5.2f - ${mulTime(mulTime.length / 2)}%5.2f - ${mulTime((mulTime.length * 0.75).toInt)}%5.2f - ${mulTime.max}%5.2f\t$mulTimeMean%5.2f")
     println(f"[${mulTimeMean - mulTimeIntervalSize}%5.2f, ${mulTimeMean + mulTimeIntervalSize}%5.2f]")
-
+    println(addTime.mkString("[", ", ", "]"))
+    println(mulTime.mkString("[", ", ", "]"))
     Utility.gc()
   }
 }
