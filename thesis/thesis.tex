@@ -385,7 +385,28 @@ Before I describe my implementation in detail, I provide a short list of its lim
 
 The implementation of my Units of Measure system rests on a few cornerstones that I present here. Without those, this system would not be possible, at least not without sacrificing a few of its goals. Some of those features (like Type Macros) are still very experimental and only available in nightly builds of Scala 2.11. Therefore, my library does not work with the current stable version of Scala (2.10 at the of writing). Luckily, it is very easy to use Scala 2.11 even now - builds are provided over a Sonatype repository and can be used with a simple sbt include (sbt is the de facto standard build system for Scala).
 
+\section{Design Principles}
+
+First of all, for a Units of Measure system it is necessary to store the unit information for each number somehow. The easiest and most natural way is to turn the number into an object and include the unit information as a field, but this incurs additional overhead. To avoid this, I store unit information in type parameters - they don't need any space at runtime, since on the JVM they are eliminated by erasure. Unit expressions are represented as a simple linked list, a single node consists of a primitive unit and its exponent.
+
+However, normally operations on those type parameters are cumbersome and make it difficult to use and implement a full unit system. Fortunately, with the introduction of macros in Scala 2.10, it is possible to perform arbitrary transformations on type parameters, and source code in general. For details on how macros work in Scala, see Section \ref{sec:macros}.
+
+There is still one last problem: Arithmetic performance on boxed types is abysmal, and raw primitives can't have type arguments. Again, Scala 2.10 introduces a solution to this problem: Value classes. \ref{sec:value_classes}
+
+To wrap up, you can see a full example of a Measure in Figure \ref{code:scala_measure}. As an additional optimization, I created separate implementations for the primitive types \verb|int|, \verb|long|, \verb|float| and \verb|double| in addition to the generic implementation for all types that are instances of \verb|Numeric|.
+
+\begin{figure}
+\begin{minted}{scala}
+val u = new MeasureInt[CUnit[SUnit[Meter,  Pos1],
+                             SUnit[Second, Neg2]]](10)
+\end{minted}
+\caption{A Measure representing the value $10 m/s^2$, with underlying type int.}
+\label{code:scala_measure}
+\end{figure}
+
+
 \section{Macros in Scala}
+\label{sec:macros}
 
 Macros are what make a lot of the features of my Units of Measure system even possible in the first place. Fundamentally, macros in Scala are nothing more than normal functions that are executed by the compiler. Any arguments will be passed as abstract syntax trees (AST), and the result of the macro (another AST) is used in place of the original macro call. Those ASTs are the same data structures used by the compiler internally, and access to more specific APIs is possible using a special \verb|Context| object. I will cover the most relevant features here, for a full documentation please refer to \citep{Eugene13}.
 
@@ -450,6 +471,7 @@ Construction of ASTs by hand is often very cumbersome. Luckily, there is a solut
 
 
 \section{Value Classes}
+\label{sec:value_classes}
 
 On the Java Virtual Machine (JVM), optimal arithmetic performance is only possible with primitive data types. The downside is that they can't store any additional information, not even at compile time, since they don't accept type parameters.
 Scala's value classes offer a solution to this problem. Value classes are a compile time wrapper around other types - similar to Haskell's \verb|newtype|. They also share the same limitations - a value class can only have a single field, type information is not available at runtime, etc.
