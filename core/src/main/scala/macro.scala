@@ -54,15 +54,16 @@ object Main extends App {
   // type error
   // println("e + (b * h): " + (e + (b * h)))
 
-  val numRuns = 40
-  val runSize = 1000000
+  val numRuns = 20
+  val runSize = 2000000
 
   val benchmarks = List(
     new BenchIntFlat(),
-    new BenchMeasure(),
     new BenchMeasureIntMacro(),
+    new BenchBoxedInteger(),
     new BenchDoubleFlat(),
-    new BenchMeasureDoubleMacro()
+    new BenchMeasureDoubleMacro(),
+    new BenchBoxedDouble()
     )
 
   for(benchmark <- benchmarks) {

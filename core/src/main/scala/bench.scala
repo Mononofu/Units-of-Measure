@@ -49,16 +49,6 @@ abstract class Bench {
 }
 
 
-// annoying: can't put Measure[T] or the typetag breaks ...
-case class Vector4M[T](val x: MeasureInt[SUnit[T, Pos1]], val y: MeasureInt[SUnit[T, Pos1]],
-  val z: MeasureInt[SUnit[T, Pos1]], val w: MeasureInt[SUnit[T, Pos1]]) {
-  def +(that: Vector4M[T]) = Vector4M(this.x + that.x, this.y + that.y,
-    this.z + that.z, this.w + that.w)
-
-  def *(that: Vector4M[T]) =
-    this.x * that.x + this.y * that.y + this.z * that.z + this.w * that.w
-}
-
 case class Vector4I(val x: Int, val y: Int, val z: Int, val w: Int) {
   def +(that: Vector4I) = Vector4I(this.x + that.x, this.y + that.y,
     this.z + that.z, this.w + that.w)
@@ -67,25 +57,22 @@ case class Vector4I(val x: Int, val y: Int, val z: Int, val w: Int) {
     this.x * that.x + this.y * that.y + this.z * that.z + this.w * that.w
 }
 
-
 class BenchIntFlat extends Bench {
   var a: Array[ Vector4I ] = _
   var b: Array[ Vector4I ] = _
   var c: Array[ Vector4I ] = _
-  var d: Array[Int] = _
+  var d: Int = _
 
   def init(length: Int) {
     a = (1 to length).map(i => Vector4I(i, i, i, i)).toArray
     b = (1 to length).map(i => Vector4I(i, i, i, i)).toArray
     c = new Array[ Vector4I ](length)
-    d = new Array[Int](length)
   }
 
   def destroy() {
     a = null
     b = null
     c = null
-    d = null
   }
 
   def runAdd(length: Int) {
@@ -99,7 +86,7 @@ class BenchIntFlat extends Bench {
   def runMul(length: Int) {
     var i = 0
     while(i < length) {
-      d(i) = a(i) * b(i)
+      d = a(i) * b(i)
       i+=1
     }
   }
@@ -119,20 +106,18 @@ class BenchDoubleFlat extends Bench {
   var a: Array[ Vector4D ] = _
   var b: Array[ Vector4D ] = _
   var c: Array[ Vector4D ] = _
-  var d: Array[Double] = _
+  var d: Double = _
 
   def init(length: Int) {
     a = (1 to length).map(i => Vector4D(i, i, i, i)).toArray
     b = (1 to length).map(i => Vector4D(i, i, i, i)).toArray
     c = new Array[ Vector4D ](length)
-    d = new Array[Double](length)
   }
 
   def destroy() {
     a = null
     b = null
     c = null
-    d = null
   }
 
   def runAdd(length: Int) {
@@ -146,71 +131,23 @@ class BenchDoubleFlat extends Bench {
   def runMul(length: Int) {
     var i = 0
     while(i < length) {
-      d(i) = a(i) * b(i)
+      d = a(i) * b(i)
       i+=1
     }
   }
 }
-
-
-
-class BenchMeasure extends Bench {
-  var a: Array[ Vector4M[ Meter ] ] = _
-  var b: Array[ Vector4M[ Meter ] ] = _
-  var c: Array[ Vector4M[ Meter ] ] = _
-  var d: Array[ MeasureInt[ SUnit[Meter, Pos2] ] ] = _
-
-  def init(length: Int) {
-    a = new Array[ Vector4M[ Meter ] ](length)
-    b = new Array[ Vector4M[ Meter ] ](length)
-    c = new Array[ Vector4M[ Meter ] ](length)
-    d = new Array[ MeasureInt[ SUnit[Meter, Pos2] ] ](length)
-
-    var i = 0
-    while(i < length) {
-      a(i) = Vector4M(u(i, "m"), u(i, "m"), u(i, "m"), u(i, "m"))
-      b(i) = Vector4M(u(i, "m"), u(i, "m"), u(i, "m"), u(i, "m"))
-      i+=1
-    }
-  }
-
-  def destroy() {
-    a = null
-    b = null
-    c = null
-    d = null
-  }
-
-  def runAdd(length: Int) {
-    var i = 0
-    while(i < length) {
-      c(i) = a(i) + b(i)
-      i+=1
-    }
-  }
-
-  def runMul(length: Int) {
-    var i = 0
-    while(i < length) {
-      d(i) = a(i) * b(i)
-      i+=1
-    }
-  }
-}
-
 
 
 class BenchMeasureIntMacro extends Bench {
   var a: Array[ Vector4G[u_i("m")] ] = _
   var b: Array[ Vector4G[u_i("m")]  ] = _
   var c: Array[ Vector4G[u_i("m")]  ] = _
-  var d: Array[ u_i("m^2") ] = _
+  var d: u_i("m^2") = _
 
   def init(length: Int) {
     a = new Array[ Vector4G[u_i("m")]  ](length)
     b = new Array[ Vector4G[u_i("m")]  ](length)
     c = new Array[ Vector4G[u_i("m")]  ](length)
-    d = new Array[ u_i("m^2") ](length)
 
     var i = 0
     while(i < length) {
@@ -224,7 +161,6 @@ class BenchMeasureIntMacro extends Bench {
     a = null
     b = null
     c = null
-    d = null
   }
 
   def runAdd(length: Int) {
@@ -238,7 +174,7 @@ class BenchMeasureIntMacro extends Bench {
   def runMul(length: Int) {
     var i = 0
     while(i < length) {
-      d(i) = a(i) * b(i)
+      d = a(i) * b(i)
       i+=1
     }
   }
@@ -248,13 +184,12 @@ class BenchMeasureDoubleMacro extends Bench {
   var a: Array[ Vector4GD[u_d("m")] ] = _
   var b: Array[ Vector4GD[u_d("m")]  ] = _
   var c: Array[ Vector4GD[u_d("m")]  ] = _
-  var d: Array[ u_d("m^2") ] = _
+  var d: u_d("m^2") = _
 
   def init(length: Int) {
     a = new Array[ Vector4GD[u_d("m")]  ](length)
     b = new Array[ Vector4GD[u_d("m")]  ](length)
     c = new Array[ Vector4GD[u_d("m")]  ](length)
-    d = new Array[ u_d("m^2") ](length)
 
     var i = 0.0
     while(i < length) {
@@ -268,7 +203,6 @@ class BenchMeasureDoubleMacro extends Bench {
     a = null
     b = null
     c = null
-    d = null
   }
 
   def runAdd(length: Int) {
@@ -282,7 +216,102 @@ class BenchMeasureDoubleMacro extends Bench {
   def runMul(length: Int) {
     var i = 0
     while(i < length) {
-      d(i) = a(i) * b(i)
+      d = a(i) * b(i)
+      i+=1
+    }
+  }
+}
+
+
+
+case class Vector4Double(val x: java.lang.Double, val y: java.lang.Double, val z: java.lang.Double, val w: java.lang.Double) {
+  def +(that: Vector4Double) = Vector4Double(this.x + that.x, this.y + that.y,
+    this.z + that.z, this.w + that.w)
+
+  def *(that: Vector4Double) =
+    this.x * that.x + this.y * that.y + this.z * that.z + this.w * that.w
+}
+
+
+class BenchBoxedDouble extends Bench {
+  var a: Array[ Vector4Double ] = _
+  var b: Array[ Vector4Double ] = _
+  var c: Array[ Vector4Double ] = _
+  var d: java.lang.Double = _
+
+  def init(length: Int) {
+    a = (1 to length).map(i => Vector4Double(i, i, i, i)).toArray
+    b = (1 to length).map(i => Vector4Double(i, i, i, i)).toArray
+    c = new Array[ Vector4Double ](length)
+  }
+
+  def destroy() {
+    a = null
+    b = null
+    c = null
+  }
+
+  def runAdd(length: Int) {
+    var i = 0
+    while(i < length) {
+      c(i) = a(i) + b(i)
+      i+=1
+    }
+  }
+
+  def runMul(length: Int) {
+    var i = 0
+    while(i < length) {
+      d = a(i) * b(i)
+      i+=1
+    }
+  }
+}
+
+
+
+
+
+import java.lang.Integer
+case class Vector4Integer(val x: Integer, val y: Integer, val z: Integer, val w: Integer) {
+  def +(that: Vector4Integer) = Vector4Integer(this.x + that.x, this.y + that.y,
+    this.z + that.z, this.w + that.w)
+
+  def *(that: Vector4Integer) =
+    this.x * that.x + this.y * that.y + this.z * that.z + this.w * that.w
+}
+
+
+class BenchBoxedInteger extends Bench {
+  var a: Array[ Vector4Integer ] = _
+  var b: Array[ Vector4Integer ] = _
+  var c: Array[ Vector4Integer ] = _
+  var d: Integer = _
+
+  def init(length: Int) {
+    a = (1 to length).map(i => Vector4Integer(i, i, i, i)).toArray
+    b = (1 to length).map(i => Vector4Integer(i, i, i, i)).toArray
+    c = new Array[ Vector4Integer ](length)
+  }
+
+  def destroy() {
+    a = null
+    b = null
+    c = null
+  }
+
+  def runAdd(length: Int) {
+    var i = 0
+    while(i < length) {
+      c(i) = a(i) + b(i)
+      i+=1
+    }
+  }
+
+  def runMul(length: Int) {
+    var i = 0
+    while(i < length) {
+      d = a(i) * b(i)
       i+=1
     }
   }
