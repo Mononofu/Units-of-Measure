@@ -364,6 +364,7 @@ As we have seen, there are a few common features that almost all systems support
 \end{description}
 
 \section{Limitations}
+\label{sec:limitiations}
 
 Before I describe my implementation in detail, I provide a short list of its limitations. Those are mostly based on limitations of the JVM itself, or on more fundamental issues.
 
@@ -506,33 +507,52 @@ lazy val shortFactor: PackratParser[List[GeneralUnit]] = (
 
 \section{Defining Units}
 \section{Arithmetic with Measures}
+\section{Conversions}
+\section{Using optimized Measures}
 
 \chapter{Benchmarks}
 \label{cha:bench}
 
-To make sure my implementation actually achieves the raw performance I am aiming for, I wrote a simple benchmark suite to compare primitive data types against my own Measures. The benchmark tests two simple operations, vector addition and dot product. To lessen the impact of overhead costs and concentrate on the performance of the arithmetic operations, all benchmarks are run on an array of 2 million vectors. A single run of a benchmark consists of 20 runs through such an array. To calculate the median runtime for each operation as well as a confidence interval ($\alpha = 0.05$), 30 runs are performed for each implementation.
-
-As can be seen in table \ref{bench:scala_measures}, for addition there is no significant difference between the performance of primitive data types and Measures annotated with unit information. There is a slowdown for multiplication (about 40 \%), but it is small compared to performance of boxed types.
-
-
+\begin{figure}
+\begin{tabular}{lrrrrrr}
+Type          & int      & MeasureInt  &    Integer  & double   & MeasureDouble  & Double \\
+\midrule
+addition      & 22.56 ns &  21.73 ns   &  505.05 ns  & 64.63 ns &  61.68 ns      & 665.10 ns \\
+dot product   & 12.65 ns &  12.85 ns   &   37.42 ns  & 15.30 ns &  15.45 ns      &  47.74 ns
+\end{tabular}
+\caption{Median runtime of arithmetic operations for different data types, per operation.}
+\label{bench:scala_measures_median}
+\end{figure}
 
 \begin{figure}
 \begin{tabular}{lrrrr}
-Type            & int      & MeasureInt  & double    & MeasureDouble \\
+Type          & int             & MeasureInt      &     double      & MeasureDouble  \\
 \midrule
-addition        & 11.08 ns &  10.59 ns   &  15.21 ns &  15.34 ns             \\
-dot product     &  6.98 ns &   9.89 ns   &   8.63 ns &  12.58 ns
+addition      & [17.80, 28.25]  & [10.35, 36.43]  & [18.69, 102.87] & [-10.22, 122.48] \\
+dot product   & [12.41, 13.04]  & [12.73, 13.20]  &  [15.14, 15.40] &  [15.19, 15.48]
 \end{tabular}
-\caption{Median runtime of arithmetic operations for different data types, per operation.}
-\label{bench:scala_measures}
+\caption{Confidence intervals for the average runtime ($\alpha = 0.05$) of arithmetic operations for different data types.}
+\label{bench:scala_measures_interval}
 \end{figure}
+
+
+To make sure my implementation actually achieves the raw performance I am aiming for, I wrote a simple benchmark suite to compare primitive data types against my own Measures. The benchmark tests two simple operations, vector addition and dot product. Vectors were not array backed, but rather had four hardcoded elements. To ensure optimal performance, I created separate implementations for each data type that was tested - unrestricted generics lead to boxing, which would hide any performance impact of the Measures. Still, in Scala generics are translated without boxing if a restrictive type bound permits it. I utilize this to create Vectors that can take a Measure of any unit (read: with any type parameter), as long as it is based on a certain type (this works since Measures are reduced to primitive types by the compiler).
+
+These generic Vectors of Measures actually necessitated a trick mentioned in chapter \ref{cha:future}. Since the Measure macros for arithmetic can by default only see the name of the type parameter when they are used in a generic method, it is necessary to implement the methods of the Vector as macros themselves. For details please refer to chapter \ref{cha:future}, you can see the implementation in Figure \ref{code:scala_generic}.
+
+To lessen the impact of overhead costs and concentrate on the performance of the arithmetic operations, all benchmarks are run on an array of 2 million vectors. A single run of a benchmark consists of 20 runs through such an array, with 5 untimed runs to warm-up the JIT. Finally, to calculate the median runtime for each operation as well as a confidence interval ($\alpha = 0.05$) for the expected runtime, 30 runs are performed for each implementation. The results are tallied up in Scala, and boxplots are created with matplotlib in Python.
+
+As can be seen in tables \ref{bench:scala_measures_median} and \ref{bench:scala_measures_interval}, there is no significant difference between primitive types and Measures. However, there is quite some variability in expected runtime, which is mostly due to garbage collection overhead.
+
+
+
 
 
 \begin{figure*}[htb]
 \centering
 \includegraphics[width=0.49\textwidth]{boxplot_add.png}
 \includegraphics[width=0.49\textwidth]{boxplot_mul.png}
-\caption{Runtime for addition and dot product, measured with the methodology described in Chapter \ref{cha:bench}. For addition, there is no significant difference between primitives and Measures, whereas for multiplication, there is a 40\% slowdown.}
+\caption{Runtime for addition and dot product, measured with the methodology described in Chapter \ref{cha:bench}. There is no significant difference between primitives and Measures, although there is of course some variability due to garbage collection.}
 \label{fig:rome}
 \end{figure*}
 
@@ -540,10 +560,47 @@ dot product     &  6.98 ns &   9.89 ns   &   8.63 ns &  12.58 ns
 
 
 \chapter{Future Work}
+\label{cha:future}
 
-better generics
+Two problems remain to be solved. First, currently it is awkward to combine generics with Measures, as the underlying macros rely on knowing the actual type parameter to perform the correct transformations. A solution to this problem is not easy - either C++ style templates have to be emulated to generate different code for different type parameters, or the unit calculation has to be moved into a compiler plugin.
 
-improvements to value classes
+As a workaround, generic functions can be implemented as macros themselves. Thanks to quasiquoting, this is not too difficult, but care needs to be taken to properly precompute any arguments. Otherwise, performance could drop or a user could run into unexpected side effects (multiple evaluation!). For an example of such an implementation, see Figure \ref{code:scala_generic}.
+
+To further streamline this process, a helper macro could be created. This macro would parse a expression passed in by the user, properly precompute all all values that are used and then emit the correct generic code.
+
+\begin{figure}
+\begin{minted}{scala}
+/* normal (non-generic) Vector */
+case class Vector2(val x: Int, val y: Int) {
+  def +(that: Vector2) = Vector2(this.x + that.x, this.y + that.y)
+}
+
+/* generic Vector, optimized for Measures based on int */
+
+/* the type bound here is very important, otherwise the value class  *
+ * will be boxed (ie T is assumed to be an object), and performance  *
+ * is abysmal. check it with 'javap Vector4G' to see the byte code   */
+case class Vector2G[T <: MeasureInt[_]](val x: T, val y: T) {
+  def +(that: Vector2G[T]) = macro VectorImpl.plus_impl[T]
+}
+
+object VectorImpl {
+  def plus_impl[T <: MeasureInt[_]](c: Context)
+      (that: c.Expr[Vector2G[T]]): c.Expr[Any] = {
+    import c.universe._
+    val comp = new Precomputer[c.type](c)
+    val (aID, bID) = (comp.compute(c.prefix.tree), comp.compute(that.tree))
+    val stats = q"Vector2G($aID.x + $bID.x, $aID.y + $bID.y)"
+    c.Expr(Block(comp.evals.toList, stats))
+  }
+}
+\end{minted}
+\caption{Two different implementations for a 2D Vector. The first is specialized for int, the second uses Generics to accept all Measures that are based on int.}
+\label{code:scala_generic}
+\end{figure}
+
+
+Second, as mentioned in Section \ref{sec:limitiations}, Value classes currently experience degraded performance if used in arrays. This might be fixed in the next version of Scala, offering increased performance with a simple recompilation. Otherwise, a custom array wrapper that stores value classes as raw primitives by manually unwrapping them could solve this problem too. Even without a workaround, this problem is not too serious: performance only drops by about 40\% compared to raw primitives.
 
 
 \chapter{Acknowledgements}
