@@ -505,10 +505,85 @@ lazy val shortFactor: PackratParser[List[GeneralUnit]] = (
 
 \chapter{Usage}
 
+Usage of the Units of Measure system is straight forward - for convenience, normal arithmetic operators are overloaded and Measures can be used just like normal numbers. Still, a few topics - units creation or conversions for example - warrant special attention, so they will be covered in the following.
+
 \section{Defining Units}
+
+A useful Units of Measure systems needs two different kinds of units. First, fundamental units that don't depend on any other units and are fully defined on their own. These include the SI base units and other units the user creates that don't depend on other units. And second, derived units that include a conversion factor from one or more base units. Those are of course the SI derived units - Newton, degree Celsius, Volt, etc. - and other user created derived units.
+
+Both kinds of units are defined as new types, derived from a special helper macro (\verb|NewUnit|). This helper macro takes care of introducing appropriate helper classes to store information about unit name abbreviations (eg. \verb|m| for \verb|Meter|) and conversion factors for derived units. It resolves to an empty base class, adding no additional members to the class of the just defined unit. For an example of unit definitions, refer to Figure \ref{code:scala_define_units}. Note that units don't necessarily need to be defined as traits, a normal class will also work just fine - it's all about creating a new visible type name.
+
+\begin{figure}
+\begin{minted}{scala}
+// A fundamental unit only needs an abbreviation
+trait Meter extends NewUnit("m")
+
+// derived units are defined by also specifying a conversion factor
+// and a base unit
+trait Newton extends NewUnit("N", (1, "kg*m/s^2"))
+
+// derived units can also include an offset if necessary
+trait Celsius extends NewUnit("C", (1, "K"), 273.15)
+trait Fahrenheit extends NewUnit("F", (5.0/9.0, "C"), -32.0)
+\end{minted}
+\caption{Definition of several SI units, both base and derived. Note that NewUnit is not a real type, but a macro that introduces a few helper classes before expanding to an empty base class.}
+\label{code:scala_define_units}
+\end{figure}
+
+\section{Creating Measures}
+\label{sec:measure_creation}
+
+Creating Measures is easy thanks to a helper macro, \verb|u(value, unit)| that automatically generates the type parameters for the Measure class form a unit expression specified by the user. This unit expression allows for the usual arithmetic operators, including \verb|*| and space for multiplication, \verb|/| for division and \verb|^| for exponentiation. For a sample of a few unit definitions, see Figure \ref{code:scala_create_measure}.
+
+The same macro can also be used to generate type signatures by simple omitting the value parameter. This is useful for function signatures, where type inference can't be used.
+
+\begin{figure}
+\begin{minted}{scala}
+val a = u(10, "m/s^2")
+val b = a + u(5, "m/s^2")
+val c = b * u(10, "h")
+
+// compiler error: can't add Measures of unequal units
+// val d = a + u(8, "m/s")
+
+def f(weight: u("kg")) = ...
+\end{minted}
+\caption{Examples of Measure creation, as well as simple arithmetic operations.}
+\label{code:scala_create_measure}
+\end{figure}
+
 \section{Arithmetic with Measures}
+
+As mentioned in the beginning, the normal arithmetic operators (\verb|+|, \verb|-|, \verb|*| and \verb|/|) are overloaded to allow for intuitive use. Additionally, a special exponentiation operator \verb|**|, modeled after Python, exists. It is necessary since exponentiation changes the units of a Measure, thus disallowing the use of the normal \verb|Math.pow| function. Refer to Figure \ref{code:scala_create_measure} for usage examples.
+
 \section{Conversions}
+
+Often, it is necessary to convert between different units - either from imperial to metric, or simple within a single unit system. To facilitate this, all Measures have a special \verb|as(unit)| macro member that generates code to automatically convert to the desired unit (if possible). This relies on the conversion factors specified during unit creation (Section \ref{sec:measure_creation}) and is otherwise fully automatic. In Figure \ref{code:scala_measure_conversion}, an example of unit conversion can be seen.
+
+\begin{figure}
+\begin{minted}{scala}
+// unit conversion with .as()
+val a = (u(10, "m/s^2") * u(10, "h")).as("km/h")
+
+// optimized Measure
+val b = u_i(10, "kg")
+
+// converting optimized Measures
+val c = b.asType(n => new BigDecimal(n))
+\end{minted}
+\caption{Examples of Measure creation, as well as simple arithmetic operations.}
+\label{code:scala_measure_conversion}
+\end{figure}
+
 \section{Using optimized Measures}
+
+To increase performance, specialized versions of the normal Measure class (which takes any object that is an instance of Numeric)  exist for four primitive types: \verb|int|, \verb|long|, \verb|float| and \verb|double|. These don't suffer from the overhead for generics the normal class has to be, resulting in slightly faster (~40\%) performance.
+
+The specialized Measure classes can be used with the macros introduced above, postfixed by a single letter to indicate which instance is desired: \verb|u_i| for \verb|int|, \verb|u_l| for \verb|long|, \verb|u_f| for \verb|float| and \verb|u_d| for \verb|double|. Of course, conversion between the different specializations is also possible with member functions: \verb|asInt|, \verb|asLong|, \verb|asFloat|, \verb|asDouble| and \verb|asType(conversionFunction)|.
+
+Both are shown in Figure \ref{code:scala_measure_conversion}.
+
+
 
 \chapter{Benchmarks}
 \label{cha:bench}
@@ -538,11 +613,13 @@ dot product   & [12.41, 13.04]  & [12.73, 13.20]  &  [15.14, 15.40] &  [15.19, 1
 
 To make sure my implementation actually achieves the raw performance I am aiming for, I wrote a simple benchmark suite to compare primitive data types against my own Measures. The benchmark tests two simple operations, vector addition and dot product. Vectors were not array backed, but rather had four hardcoded elements. To ensure optimal performance, I created separate implementations for each data type that was tested - unrestricted generics lead to boxing, which would hide any performance impact of the Measures. Still, in Scala generics are translated without boxing if a restrictive type bound permits it. I utilize this to create Vectors that can take a Measure of any unit (read: with any type parameter), as long as it is based on a certain type (this works since Measures are reduced to primitive types by the compiler).
 
-These generic Vectors of Measures actually necessitated a trick mentioned in chapter \ref{cha:future}. Since the Measure macros for arithmetic can by default only see the name of the type parameter when they are used in a generic method, it is necessary to implement the methods of the Vector as macros themselves. For details please refer to chapter \ref{cha:future}, you can see the implementation in Figure \ref{code:scala_generic}.
+These generic Vectors of Measures actually necessitated a trick mentioned in chapter \ref{cha:future}. Since the Measure macros for arithmetic can by default only see the name of the type parameter when they are used in a generic method, it is necessary to implement the methods of the Vector as macros themselves. For details please refer to chapter \ref{cha:future}; you can see the implementation in Figure \ref{code:scala_generic}.
 
+\section{Method}
 To lessen the impact of overhead costs and concentrate on the performance of the arithmetic operations, all benchmarks are run on an array of 2 million vectors. A single run of a benchmark consists of 20 runs through such an array, with 5 untimed runs to warm-up the JIT. Finally, to calculate the median runtime for each operation as well as a confidence interval ($\alpha = 0.05$) for the expected runtime, 30 runs are performed for each implementation. The results are tallied up in Scala, and boxplots are created with matplotlib in Python.
 
-As can be seen in tables \ref{bench:scala_measures_median} and \ref{bench:scala_measures_interval}, there is no significant difference between primitive types and Measures. However, there is quite some variability in expected runtime, which is mostly due to garbage collection overhead.
+\section{Results}
+As can be seen in tables \ref{bench:scala_measures_median} and \ref{bench:scala_measures_interval}, there is no significant difference between primitive types and Measures. However, there is quite some variability in expected runtime, which is mostly due to garbage collection overhead. If Measure were not properly optimized, runtime would be similar to the boxed types seen in table \ref{bench:scala_measures_median} - 3 to 25 times slower than primitives.
 
 
 
@@ -562,7 +639,11 @@ As can be seen in tables \ref{bench:scala_measures_median} and \ref{bench:scala_
 \chapter{Future Work}
 \label{cha:future}
 
-Two problems remain to be solved. First, currently it is awkward to combine generics with Measures, as the underlying macros rely on knowing the actual type parameter to perform the correct transformations. A solution to this problem is not easy - either C++ style templates have to be emulated to generate different code for different type parameters, or the unit calculation has to be moved into a compiler plugin.
+Two problems remain to be solved that would surpass the scope of this project and are therefore only described here, without offering a full solution. Nevertheless they should be kept in mind when using this Units of Measure library to avoid any potential problems.
+
+\section{Generics}
+
+First, currently it is awkward to combine generics with Measures, as the underlying macros rely on knowing the actual type parameter to perform the correct transformations. A solution to this problem is not easy - either C++ style templates have to be emulated to generate different code for different type parameters, or the unit calculation has to be moved into a compiler plugin.
 
 As a workaround, generic functions can be implemented as macros themselves. Thanks to quasiquoting, this is not too difficult, but care needs to be taken to properly precompute any arguments. Otherwise, performance could drop or a user could run into unexpected side effects (multiple evaluation!). For an example of such an implementation, see Figure \ref{code:scala_generic}.
 
@@ -599,7 +680,7 @@ object VectorImpl {
 \label{code:scala_generic}
 \end{figure}
 
-
+\section{Value Classes}
 Second, as mentioned in Section \ref{sec:limitiations}, Value classes currently experience degraded performance if used in arrays. This might be fixed in the next version of Scala, offering increased performance with a simple recompilation. Otherwise, a custom array wrapper that stores value classes as raw primitives by manually unwrapping them could solve this problem too. Even without a workaround, this problem is not too serious: performance only drops by about 40\% compared to raw primitives.
 
 
