@@ -131,8 +131,19 @@ Vienna, February 12th, 2010  \hfill Julian Schrittwieser
 \pagenumbering{arabic} % Roman numerals
 \setcounter{page}{1}
 
+Units of Measurement are fundamental to many endeavors, often so important that their usage and definition is mandated by law. Today, the International System of Units (SI) is in wide use, along with legacy systems like the Imperial system. These coexisting unit systems are also a source of confusion and accidents - in September 1999, NASA lost the Mars Climate Orbiter due to a mixup between Netwon and pound force \citep{Nasa99}. Even earlier, a Boeing 767 ran out of fuel in mid-flight, again because of mistakes relating to Imperial and Metric unit systems \citep{Witkin83}.
+
+
 \section{Motivation}
-mars rover example
+
+Almost as long as high-level programming languages have existed, there have been attempts to enhance them with proper Units of Measure systems. A very early paper from Narain Gehani extends quantities in Pascal and Fortran with a special \emph{UNITS} attribute to be able to detect errors missed by the normal type system \citep{Gehani1977}. The approaches vary wildly: Allen et al. present an object oriented Units of Measure system based on statically typed metaclasses \citep{Allen04}.  More recently, Hills et al. introduce a static analyzer for the C programming language, based solely on annotations in source comments \citep{Hills2012}.
+
+As of the writing of this paper, there is no comprehensive Units of Measure system for the Scala programming language. Additionally, the introduction of compile time macros in the most recent version of the language (2.10) offers an unique opportunity: For the first time, it is possible to create a solely type-based unit system that is not restricted to predefined base units, but can be extended arbitrarily.
+
+\section{Structure}
+
+In this paper, I first give an overview of Units of Measure systems currently in use in other languages. I then go on to describe my own implementation in detail, starting with the objectives I'm trying to achieve and the limitations my system has. Next, details of the implementation are given, before usage examples are shown. Finally, benchmarks are used to verify the objectives from the beginning and an outlook into future work concludes the paper.
+
 
 \section{Nomenclature}
 Throughout this paper, I use \emph{Measure} to refer to a number annotated with its corresponding units. The exact implementation of this annotation depends on the context, some libraries use static type informations, others fields in an object. \emph{Units of Measure} is used to refer to any system that provides such an implementation, including methods to perform arithmetic with \emph{Measure}s. \emph{Units} are the physical units in abbreviated or full form that the Measure is used to represent. Examples include \verb|m/s| for speed or \verb|kg*m/s^2 == N| for force.
@@ -698,10 +709,6 @@ Eugene, creator of macros
 \bibliographystyle{dinat}
 \bibliography{thesis}{}
 \addcontentsline{toc}{chapter}{A \;References}
-
-\chapter*{}
-\onehalfspacing
-Ich erkläre, dass ich diese Fachbereichsarbeit ausschließlich selbst und ohne Gebrauch unerlaubter Hilfsmittel oder Hilfen verfasst habe.
 
 
 
