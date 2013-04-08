@@ -269,17 +269,21 @@ object MeasureImpl {
     val comp = new Precomputer[c.type](c)
     val nID = comp.compute(c.prefix.tree)
 
-    val fullType = c.prefix.tree.tpe.toString
-    val baseType = fullType.substring(0, fullType.indexOf("["))
-    val className = baseType.substring(baseType.lastIndexOf(".") + 1)
+    val stats = c.prefix.tree.tpe match {
+      case TypeRef(_, qualifiedClassName, typeParams) =>
+        val qualified = showRaw(qualifiedClassName).toString
+        val className = qualified.substring(qualified.lastIndexOf(".") + 1)
 
-    val valueExp = q"($nID.n.toDouble * $sourceFactor + $sourceOffset) / $targetFactor + $targetOffset"
-    val stats = className match {
-      case "MeasureInt" => q"new MeasureInt[$parsedUnit](($valueExp).toInt)"
-      case "MeasureLong" => q"new MeasureLong[$parsedUnit](($valueExp).toLong)"
-      case "MeasureFloat" => q"new MeasureFloat[$parsedUnit](($valueExp).toFloat)"
-      case "MeasureDouble" => q"new MeasureDouble[$parsedUnit]($valueExp)"
-      case "Measure" => q"new Measure[$parsedUnit]($valueExp)"
+        val valueExp = q"($nID.n.toDouble * $sourceFactor + $sourceOffset) / $targetFactor + $targetOffset"
+        className match {
+          case "MeasureInt" => q"new MeasureInt[$parsedUnit](($valueExp).toInt)"
+          case "MeasureLong" => q"new MeasureLong[$parsedUnit](($valueExp).toLong)"
+          case "MeasureFloat" => q"new MeasureFloat[$parsedUnit](($valueExp).toFloat)"
+          case "MeasureDouble" => q"new MeasureDouble[$parsedUnit]($valueExp)"
+          case "Measure" =>
+            val measureType = typeParams(1)
+            q"new Measure[$parsedUnit, $measureType]($valueExp)"
+        }
     }
 
     c.Expr(Block(comp.evals.toList, stats))

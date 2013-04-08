@@ -24,3 +24,10 @@ http://docs.scala-lang.org/overviews/macros/overview.html#writing_bigger_macros
 
 macro paradise:
 https://github.com/scalamacros/sbt-example-paradise/blob/master/project/Build.scala#L9-11
+
+
+als letztes kapitel conclusions & future work
+introduction und conclusion unabhängig lesbar
+am ende der einleitung: zusammenfassung der beiträge dieser arbeit
+
+s/Benchmarks/Evalutation
