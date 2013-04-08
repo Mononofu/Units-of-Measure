@@ -198,7 +198,6 @@ object MeasureImpl {
     val treeTarget = compute_unit(c)(unitEx)
     val typeTarget = TypeParser.parse(treeTarget.toString.replace("$", ""))
 
-
     // purge units that occur in both source and target
     var leftoverUnits: List[GeneralUnit] = List()
     var targetUnits = typeTarget.toList
@@ -213,6 +212,7 @@ object MeasureImpl {
       }
     }
 
+
     var targetUnitsBase = ListBuffer[GeneralUnit]()
     var sourceUnitsBase = ListBuffer[GeneralUnit]()
 
@@ -222,10 +222,10 @@ object MeasureImpl {
         case long => lookupBaseUnit(c, long.name) match {
           case None => (List(long), 1.0, 0.0)
           case Some((shortBaseEx, newFactor, newOffset)) =>
-            val (units, factor, offset) = getBase(shortBaseEx, combineOffsets)
-            val correctedUnits = units.map(u => SUnit(u.name, u.power * long.power))
+            val (units, factor, offset) = getBase(s"($shortBaseEx)^${long.power}", combineOffsets)
+            val correctedUnits = units.map(u => SUnit(u.name, u.power))
             (correctedUnits,
-             Math.pow(factor, long.power) * newFactor,
+             Math.pow(newFactor, long.power) * factor,
              combineOffsets(newOffset, offset, newFactor))
         }
       }

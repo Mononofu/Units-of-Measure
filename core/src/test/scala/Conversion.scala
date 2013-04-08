@@ -12,6 +12,8 @@ class ConversionSpec extends FlatSpec with ShouldMatchers {
     u(10, "km").as("m") should equal (u(10000, "m"))
     u(10, "ft*m").as("m*m") should equal (u(3, "m^2"))
     u(2, "min").as("s") should equal (u(120, "s"))
+
+    u(10, "m/s").as("km/h") should equal (u(36, "km/h"))
   }
 
   it should "resolve units recursively" in {
