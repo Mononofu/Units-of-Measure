@@ -139,35 +139,36 @@ Units of Measurement are fundamental to many endeavors, often so important that 
 
 
 \section{Motivation}
-
 Almost as long as high-level programming languages have existed, there have been attempts to enhance them with proper Units of Measure systems. A very early paper from Narain Gehani extends quantities in Pascal and Fortran with a special \emph{UNITS} attribute to be able to detect errors missed by the normal type system \citep{Gehani1977}. The approaches vary wildly: Allen et al. present an object oriented Units of Measure system based on statically typed metaclasses \citep{Allen04}.  More recently, Hills et al. introduce a static analyzer for the C programming language, based solely on annotations in source comments \citep{Hills2012}.
 
-As of the writing of this paper, there is no comprehensive Units of Measure system for the Scala programming language. Additionally, the introduction of compile time macros in the most recent version of the language (2.10) offers an unique opportunity: For the first time, it is possible to create a solely type-based unit system that is not restricted to predefined base units, but can be extended arbitrarily.
+As of the time of writing of this paper, there is no comprehensive Units of Measure system for the Scala programming language. Additionally, the introduction of compile time macros in the most recent version of the language (2.10) offers an unique opportunity: For the first time, it is possible to create a solely type-based unit system that is not restricted to predefined base units, but can be extended arbitrarily.
+
 
 \section{Structure}
-
-In this paper, I first give an overview of Units of Measure systems currently in use in other languages. I then go on to describe my own implementation in detail, starting with the objectives I'm trying to achieve and the limitations my system has. Next, details of the implementation are given, before usage examples are shown. Finally, benchmarks are used to verify the objectives from the beginning and an outlook into future work concludes the paper.
+In this paper, first an overview of Units of Measure systems currently in use in other languages is given. Then a detailed description of my own implementation follows, starting with the objectives I'm trying to achieve and the limitations of the system. Next, details of the implementation are given, before usage examples are shown. Finally, benchmarks are used to verify the objectives from the beginning and an outlook into future work concludes the paper.
 
 
 \section{Nomenclature}
-Throughout this paper, I use \emph{Measure} to refer to a number annotated with its corresponding units. The exact implementation of this annotation depends on the context, some libraries use static type informations, others fields in an object. \emph{Units of Measure} is used to refer to any system that provides such an implementation, including methods to perform arithmetic with \emph{Measure}s. \emph{Units} are the physical units in abbreviated or full form that the Measure is used to represent. Examples include \verb|m/s| for speed or \verb|kg*m/s^2 == N| for force.
+Throughout this paper, \emph{Measure} is used to refer to a number annotated with its corresponding units. The exact implementation of this annotation depends on the context, some libraries use static type informations, others fields in an object. \emph{Units of Measure} is used to refer to any system that provides such information for numbers, including methods to perform arithmetic with \emph{Measure}s. \emph{Units} are the physical units in abbreviated or full form that the Measure is used to represent. Examples include \verb|m/s| for speed or \verb|kg*m/s^2 == N| for force.
+
 
 \section{Source Code}
 The source code for all benchmarks mentioned can be found on GitHub: \url{https://github.com/Mononofu/Units-of-Measure/tree/master/thesis/benchmarks}. This same repository also contains the source for this document (\url{https://github.com/Mononofu/Units-of-Measure/tree/master/thesis}) as well as the implementation of the Units of Measurement system in Scala (\url{https://github.com/Mononofu/Units-of-Measure}). All code is provided under the GNU General Public License, version 3, as is and without warranty of any kind.
 
-\section{Code Organization}
 
-% TODO: describe repo layout here
+\section{Code Organization}
+To make working with this project's code easier, it is split into three parts: The \verb|macros| directory contains the implementation of the core Units of Measures library, including everything necessary to use it in production. In \verb|units|, predefined units and vectors can be found, showing use of the system to create custom components. Finally, \verb|samples| contains examples of arithmetic with Measures, as well as the benchmarks used in this thesis.
+
 
 
 
 \chapter{Related Work}
+In principle, there are two distinct ways to implement units of measurement in a programming language: Either statically as part of the type system, or dynamically with objects that know their own units. Each approach has its own merits and disadvantages, so in the following a few existing implementations in common languages are examined, before finally describing my own solution.
 
-In principle, there are two distinct ways to implement units of measurement in a programming language: Either statically as part of the type system, or dynamically with objects that know their own unit. Each approach has its own merits and disadvantages, so in the following I examine a few existing implementations in common languages before creating my own solution.
 
 \section{Dynamic Systems}
-
-Some programming languages do not give their users much choice, because they either completely lack static type systems (dynamic languages like Python or Ruby) or their type system is not sophisticated enough for a units of measurement library. In general, those dynamic systems allow access to unit information at runtime but in turn pay a heavy performance price: Each number is stored as a full blown object (see figure \ref{code:naive_java_measure}), not as a simple primitive like a normal number. Thus, all calculations incur additional memory lookups and values take additional space.
+Some programming languages do not give their users much choice in the matter, either because they completely lack static type systems (dynamic languages like Python or Ruby) or because their type system is not sophisticated enough for a Units of Measure library.
+In general, those dynamic systems allow access to unit information at runtime, but in turn pay a heavy performance price: Each number is stored as a full blown object (see figure \ref{code:naive_java_measure}), not as a simple primitive like a normal number. Thus, all calculations incur additional memory lookups and values take additional space.
 
 \begin{figure}
 \begin{minted}{java}
@@ -183,8 +184,7 @@ class Measure<T extends java.lang.Number> {
 
 
 \subsection{Java - JScience}
-
-Java has a standardized Units of Measurement API \citep{Units13} with several implementations, both open source and commercial. I will focus on JScience here \citep{Dautelle11}. In addition to support for physical units, JScience also contains libraries for simple mathematical functions, currencies and a linear algebra module. Here, I only focus on parts pertaining to Units of Measurement.
+Java has a standardized Units of Measurement API \citep{Units13} with several implementations, both open source and commercial. Here, the focus is on JScience \citep{Dautelle11}. In addition to support for physical units, JScience also contains libraries for simple mathematical functions, currencies and a linear algebra module. Since those are not related to this thesis, only parts pertaining to Units of Measure are examined.
 
 JScience represents Measures using the class \verb/Amount/, but users are free to create their own implementations of \verb/Measurable/. Measures are created with a flexible static helper function (\verb/valueOf/) from a range of different inputs. For details, see the short usage example below in Figure \ref{code:jscience_example}. Essentially, \verb/Amount/ is a wrapper class that tags a number with its corresponding unit - as shown in \ref{code:naive_java_measure} - and provides a set of helper and conversion functions.
 
@@ -206,9 +206,9 @@ Dimension d   = u.getDimension();
 
 Unit safety is enforced both by the type system at compile time (Measures are generic classes with their units as type parameters) and comparison functions at run time (\verb/equals/ only returns true if both the value and the interval match, etc.).
 
-Unfortunately, the performance hit due to the wrapper classes is quite severe - I experienced a slowdown of around 80 on my machine in a simple benchmark, compared to normal primitives (\verb/int/ and \verb/double/) (see Figure \ref{bench:jscience}).
+Unfortunately, the performance hit due to the wrapper classes is quite severe - a slowdown of around 80 on my machine was encountered in a simple benchmark, compared to normal primitives (\verb/int/ and \verb/double/, see Figure \ref{bench:jscience}).
 
-At the moment, Units of Measurement Systems in Java are only practicable in systems that are not performance critical. Alas, many systems that would benefit most are performance critical - computer game engines, high frequency trading, etc. Therefore, Units of Measurements remain a niche application in Java.
+At the moment, Units of Measurement Systems in Java are only practicable in systems that are not performance critical. Alas, many systems that would benefit most \emph{are} performance critical - computer game engines, high frequency trading, etc. Therefore, Units of Measure remain a niche application in Java.
 
 \begin{figure}
 \begin{tabular}{lrrr}
@@ -237,7 +237,7 @@ units.predefined.define_units()                        # SI units and more
 \label{code:python_units}
 \end{figure}
 
-
+Still, the price in performance is large, as can be seen in Figure \ref{bench:python_units}. This is because Python's interpreter uses special optimizations for primitive numbers, which can't be applied to numbers tagged with units - those are represented as objects, using both a lot more memory and resulting in slower arithmetic: Objects in Python use dictionary lookups to locate their member functions, which include the arithmetic operators.
 
 \begin{figure}
 \begin{tabular}{lrrr}
@@ -246,13 +246,13 @@ method          & int    & double  & units \\
 addition        & 151 ns &  164 ns    &    4.136 ns \\
 multiplication  & 159 ns &  165 ns    &   22.352 ns
 \end{tabular}
-\caption{Even though Python is an interpreted language, there is a large difference between primitive numbers, and those provided by the \emph{units} library. The slowdown is especially severe for the multiplication as a new unit has to be generated for the result.}
+\caption{Even though Python is an interpreted language, there is a large difference between primitive numbers, and those provided by the \emph{units} library. The slowdown is especially severe for multiplication as a new unit has to be generated for the result.}
 \label{bench:python_units}
 \end{figure}
 
 
-\section{Static Systems}
 
+\section{Static Systems}
 Static systems are the complete opposite compared to dynamic systems: They usually do not provide any unit information at runtime, but also do not incur any performance overhead - all units are checked at compile time. To achieve this, they rely on a powerful type system or even compiler plugins, effectively offloading much of the work on the compiler.
 
 \subsection{F\#}
@@ -280,7 +280,7 @@ type Vector2< [<Measure>] 'u > = { x: float<'u>, y: float<'u> }
 
 \subsection{C++ - Boost.Units}
 
-The \verb/Boost.Unit/ library takes advantage of the power of C++ templates in the form of the Boost Metaprogramming Library (MPL).  It relies on the compiler to adequately optimize the code, but then incurs no performance overhead at runtime \citep{Schabel10}.However, since it heavily relies on template metaprogramming it has stringent requirements for the compiler and only works on new, standard compliant compilers.
+The \verb/Boost.Unit/ library takes advantage of the power of C++ templates in the form of the Boost Metaprogramming Library (MPL).  It relies on the compiler to adequately optimize the code, but then incurs no performance overhead at all at runtime \citep{Schabel10}. However, since it heavily relies on template metaprogramming it has stringent requirements and only works on new, standard compliant compilers.
 
 Variable definitions work as always (\verb/quantity<length> L = 2.0*meters;/), and thanks to operator overloading arithmetic is exactly the same as for primitives.
 
@@ -302,7 +302,7 @@ work(quantity<unit<force_dimension,System>,Y> F,
 
 
 \subsection{Haskell - Dimensional}
-Haskell's \verb/Dimensional/ module \citep{Buckwalter06} completely relies on the type system and is the most elegant of the unit systems presented here. It relies on a single data type (\verb/Dimensional/, see Figure \ref{code:haskell_dimensional}), parameterized with the exponents of different physical dimensions (Figure \ref{code:haskell_dim}). While only integer exponents are possible, rational exponents can be avoided in practice.
+Haskell's \verb/Dimensional/ module \citep{Buckwalter06} completely relies on the type system and is the most elegant of the unit systems presented here. It relies on a single data type (\verb/Dimensional/, see Figure \ref{code:haskell_dimensional}), parameterized with the exponents of different physical dimensions (Figure \ref{code:haskell_dim}). While only integer exponents are possible, rational exponents can be avoided and are therefore not necessary in practice anyway.
 
 \begin{figure}
 \begin{minted}{haskell}
@@ -352,18 +352,20 @@ escapeVelocity m r = sqrt (two * g * m / r)
 \verb/Dimensional/ is restricted to the physical dimensions mentioned in Figure \ref{code:haskell_dim}. To add more dimensions, the fundamental data type would have to be changed - unfeasible in practice.
 
 
+
 \subsection{Scala}
+Scala also has a long history of attempts to introduce Units of Measure. One of the oldest of such attempts is a now defunct compiler plugin \citep{Nygard09}. It allowed the programmer to introduce units using multiplication (\verb/400.0*m*m/) and caught common errors when combining units in invalid ways. Sadly, it's only compatible with Scala up to version 2.7.1 - as of 2013, the most recent version of Scala is 2.10.0.
 
-Scala also has a long history of attempts to introduce Units of Measure. One of the oldest of such attempts is a now defunct compiler plugin \citep{Nygard09}. It allowed the programmer to introduce units using multiplication (\verb/400.0*m*m/) and caught common errors when combining units in invalid ways. Sadly, it's only compatible with Scala up to version 2.7.1 - as of 2013, the most recent version is 2.10.0.
-
-Another such example comes from \citep{McBeath08}, who implements a simple unit system based on Church Numerals. However, just as Haskell's \verb/Dimensional/ it is restricted to predefined units and does not allow the user to define her own units.
+Another such example comes from \citep{McBeath08}, who implements a simple unit system based on Church Numerals. However, just as Haskell's \verb/Dimensional/, it is restricted to predefined units and does not allow the user to define her own units.
 
 Finally, there is \verb/ScalaQuantity/ \citep{Hans12}, which is closely modeled on Haskell's \verb/Dimensional/. Again, it does not allow user defined units and is otherwise so similar to \verb/Dimensional/ that I won't cover it in detail.
 
-Currently, there is no Units of Measure system in Scala that allows user defined units or provides for calculations without runtime overhead. This inspired me to create my own library, which I cover in the following.
+Currently, there is no Units of Measure system in Scala that allows user defined units or provides for calculations without runtime overhead. This inspired me to create my own library, which is covered in the following.
+
+
+
 
 \chapter{Objectives}
-
 As we have seen, there are a few common features that almost all systems support (custom units, conversions), while some aspects are limited to more advanced libraries (generics, no runtime overhead). I aim to make my Units of Measure system as comprehensive as possible, therefore I present a short summary of all desirable features here. This summary serves as a reference for my implementation, as well as a handy reminder for the reader.
 
 
