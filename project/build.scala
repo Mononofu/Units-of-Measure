@@ -18,9 +18,9 @@ object MyBuild extends Build {
 
   lazy val root: Project = Project(
     "root",
-    file("core"),
+    file("samples"),
     settings = buildSettings
-  ) aggregate(macros, core)
+  ) aggregate(macros, samples)
 
   lazy val macros: Project = Project(
     "macros",
@@ -35,9 +35,9 @@ object MyBuild extends Build {
     settings = buildSettings
   ) dependsOn(macros)
 
-  lazy val core: Project = Project(
-    "core",
-    file("core"),
+  lazy val samples: Project = Project(
+    "samples",
+    file("samples"),
     settings = buildSettings
   ) dependsOn(units)
 }
