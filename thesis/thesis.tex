@@ -117,11 +117,15 @@ Univ.-Prof. Dr. Jens \textsc{Knoop}
 % \onehalfspacing
 \chapter*{Preface}
 
-Lorem ipsum dolor sit amet, consectetur adipiscing elit. Donec in ligula et massa ultrices luctus. Aenean nec orci lectus. Maecenas ut ligula non eros dictum porttitor. Nulla vel libero vitae dolor vehicula luctus. Maecenas venenatis sapien eu mi vehicula non dapibus lorem cursus. In dapibus ornare turpis, id tincidunt odio consectetur sit amet. Integer placerat varius velit at semper. Morbi id erat felis. Donec scelerisque eros in diam sollicitudin dictum. In lobortis imperdiet sapien. Fusce volutpat orci sit amet orci consectetur faucibus.
+This thesis completes my Bachelor in Software \& Information Engineering at the Vienna University of Technology. It was written at the Complang Group, part of the Institute of Computer Languages of the Faculty of Informatics.
 
-Nullam mattis felis ac est feugiat porta. Suspendisse potenti. Suspendisse non augue eu dolor ultrices dignissim id ut augue. Donec sit amet mi a leo egestas lobortis sed a lorem. Nam sit amet turpis non mi gravida tempor id iaculis purus. Duis hendrerit justo quis orci pellentesque eu luctus magna facilisis. Nulla convallis dui vitae lorem ultrices dignissim. Praesent interdum volutpat aliquam. Nullam massa felis, accumsan vel congue hendrerit, tristique at lectus. Integer ac ipsum nec nisl elementum consequat ut vel erat. Suspendisse potenti. Proin varius, orci vel imperdiet rhoncus, nisi nibh lobortis erat, eget ultrices nibh tortor ac est. Nulla facilisi. Aenean aliquet, dui quis consectetur tempus, nunc elit volutpat nunc, eu euismod arcu diam et arcu. Aenean vulputate metus lectus, id euismod ipsum.4
+It was a pleasure to work on such an interesting problem with a vibrant language like Scala - I would like to thank Prof. Dr. Jens Knoop for making this possible, as well as for advising me about the scope and direction of this work. He also provided invaluable feedback and advice, helping to make this thesis what it is now.
+
+I would also like to express my special thanks to Eugene Burmako, creator and maintainer of the Scala Macro system. Without his work, this Units of Measure system would not have possible - both because it builds on his macros and because he provided essential help in their use.
+
+Finally, a big thank you to the Scala community in general, especially the \verb|#scala| IRC channel on Freenode and the Scala mailing list.
 \\ \\
-Vienna, February 12th, 2010  \hfill Julian Schrittwieser
+Vienna, May 17th, 2013  \hfill Julian Schrittwieser
 
 \singlespacing
 \tableofcontents
@@ -131,7 +135,7 @@ Vienna, February 12th, 2010  \hfill Julian Schrittwieser
 \pagenumbering{arabic} % Roman numerals
 \setcounter{page}{1}
 
-Units of Measurement are fundamental to many endeavors, often so important that their usage and definition is mandated by law. Today, the International System of Units (SI) is in wide use, along with legacy systems like the Imperial system. These coexisting unit systems are also a source of confusion and accidents - in September 1999, NASA lost the Mars Climate Orbiter due to a mixup between Netwon and pound force \citep{Nasa99}. Even earlier, a Boeing 767 ran out of fuel in mid-flight, again because of mistakes relating to Imperial and Metric unit systems \citep{Witkin83}.
+Units of Measurement are fundamental to many endeavors, often so important that their usage and definition is mandated by law. Today, the International System of Units (SI) is in wide use, along with legacy systems like the Imperial system. These coexisting unit systems are also a source of confusion and accidents - in September 1999, NASA lost the Mars Climate Orbiter due to a mix-up between Newton and pound force \citep{Nasa99}. Even earlier, a Boeing 767 ran out of fuel in mid-flight, again because of mistakes related to Imperial and Metric unit systems \citep{Witkin83}.
 
 
 \section{Motivation}
@@ -150,6 +154,12 @@ Throughout this paper, I use \emph{Measure} to refer to a number annotated with 
 
 \section{Source Code}
 The source code for all benchmarks mentioned can be found on GitHub: \url{https://github.com/Mononofu/Units-of-Measure/tree/master/thesis/benchmarks}. This same repository also contains the source for this document (\url{https://github.com/Mononofu/Units-of-Measure/tree/master/thesis}) as well as the implementation of the Units of Measurement system in Scala (\url{https://github.com/Mononofu/Units-of-Measure}). All code is provided under the GNU General Public License, version 3, as is and without warranty of any kind.
+
+\section{Code Organization}
+
+% TODO: describe repo layout here
+
+
 
 \chapter{Related Work}
 
@@ -694,17 +704,6 @@ object VectorImpl {
 \section{Value Classes}
 Second, as mentioned in Section \ref{sec:limitiations}, Value classes currently experience degraded performance if used in arrays. This might be fixed in the next version of Scala, offering increased performance with a simple recompilation. Otherwise, a custom array wrapper that stores value classes as raw primitives by manually unwrapping them could solve this problem too. Even without a workaround, this problem is not too serious: performance only drops by about 40\% compared to raw primitives.
 
-
-\chapter{Acknowledgements}
-scala mailing list
-
-\#scala on freenode
-
-scala user group vienna
-
-Eugene, creator of macros
-
-Prof. Dr. Jens Knoop
 
 \singlespacing
 \bibliographystyle{dinat}
