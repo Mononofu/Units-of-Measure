@@ -145,7 +145,7 @@ As of the time of writing of this paper, there is no comprehensive Units of Meas
 
 
 \section{Structure}
-In this paper, first an overview of Units of Measure systems currently in use in other languages is given. Then a detailed description of my own implementation follows, starting with the objectives I'm trying to achieve and the limitations of the system. Next, details of the implementation are given, before usage examples are shown. Finally, benchmarks are used to verify the objectives from the beginning and an outlook into future work concludes the paper.
+In this paper, first an overview of Units of Measure systems currently in use in other languages is given. Then a detailed description of my own implementation follows, starting with the objectives I am trying to achieve and the limitations of the system. Next, details of the implementation are given, before usage examples are shown. Finally, benchmarks are used to verify the objectives from the beginning and an outlook into future work concludes the paper.
 
 
 \section{Nomenclature}
@@ -224,7 +224,7 @@ multiplication  & 1.1 ns &  1.9 ns    &   162.3 ns
 
 \subsection{Python - units}
 
-Python is a dynamic language, so the only way to make a system of measurements work is to create a dynamic system that relies on tagged numbers. That's exactly what \emph{units} \citep{Donohue12} does. Usage is very simple, as seen in Figure \ref{code:python_units}. Thanks to operator overloading and the dynamic nature of Python code, units can be introduced into legacy code with only a few changes.
+Python is a dynamic language, so the only way to make a system of measurements work is to create a dynamic system that relies on tagged numbers. That is exactly what \emph{units} \citep{Donohue12} does. Usage is very simple, as seen in Figure \ref{code:python_units}. Thanks to operator overloading and the dynamic nature of Python code, units can be introduced into legacy code with only a few changes.
 
 \begin{figure}
 \begin{minted}{python}
@@ -237,7 +237,7 @@ units.predefined.define_units()                        # SI units and more
 \label{code:python_units}
 \end{figure}
 
-Still, the price in performance is large, as can be seen in Figure \ref{bench:python_units}. This is because Python's interpreter uses special optimizations for primitive numbers, which can't be applied to numbers tagged with units - those are represented as objects, using both a lot more memory and resulting in slower arithmetic: Objects in Python use dictionary lookups to locate their member functions, which include the arithmetic operators.
+Still, the price in performance is large, as can be seen in Figure \ref{bench:python_units}. This is because Python's interpreter uses special optimizations for primitive numbers, which cannot be applied to numbers tagged with units - those are represented as objects, using both a lot more memory and resulting in slower arithmetic: Objects in Python use dictionary lookups to locate their member functions, which include the arithmetic operators.
 
 \begin{figure}
 \begin{tabular}{lrrr}
@@ -260,11 +260,11 @@ Static systems are the complete opposite compared to dynamic systems: They usual
 \verb/F#/ is one of only a few languages that have integrated a system of units into the language itself. This allows for easy usage and definition of units since they can rely on special syntax.
 \citep{Kennedy08:1}
 
-As usual, \verb/F#/ comes with all common units - both SI and Imperial - predefined \citep{Kennedy08:2}, but it's also easy to interface with code that is not unit aware: Primitive types like \verb/float/ are just a type alias for \verb/float<1>/ (a float with unit dimension).
+As usual, \verb/F#/ comes with all common units - both SI and Imperial - predefined \citep{Kennedy08:2}, but it is also easy to interface with code that is not unit aware: Primitive types like \verb/float/ are just a type alias for \verb/float<1>/ (a float with unit dimension).
 
 Thanks to the language support, units also work with generics, including full type (unit) inference. As an example, if we define a simple function \verb/let sqr(x: float<_>) = x*x/, \verb/F#/ will automatically infer that it takes any \verb/float<'u>/ and returns a \verb/float<'u^2>/ \citep{Kennedy08:3}. This works for types of arbitrary complexity, making the programmers life much simpler.
 
-The support for generics also extends to custom types - it's enough to annotate a type parameter with \verb/[<Measure>]/ to make it a unit parameter \citep{Kennedy08:4}. For a example, see Figure \ref{code:fsharp}.
+The support for generics also extends to custom types - it is enough to annotate a type parameter with \verb/[<Measure>]/ to make it a unit parameter \citep{Kennedy08:4}. For a example, see Figure \ref{code:fsharp}.
 
 
 \begin{figure}
@@ -354,11 +354,11 @@ escapeVelocity m r = sqrt (two * g * m / r)
 
 
 \subsection{Scala}
-Scala also has a long history of attempts to introduce Units of Measure. One of the oldest of such attempts is a now defunct compiler plugin \citep{Nygard09}. It allowed the programmer to introduce units using multiplication (\verb/400.0*m*m/) and caught common errors when combining units in invalid ways. Sadly, it's only compatible with Scala up to version 2.7.1 - as of 2013, the most recent version of Scala is 2.10.0.
+Scala also has a long history of attempts to introduce Units of Measure. One of the oldest of such attempts is a now defunct compiler plugin \citep{Nygard09}. It allowed the programmer to introduce units using multiplication (\verb/400.0*m*m/) and caught common errors when combining units in invalid ways. Sadly, it is only compatible with Scala up to version 2.7.1 - as of 2013, the most recent version of Scala is 2.10.0.
 
 Another such example comes from \citep{McBeath08}, who implements a simple unit system based on Church Numerals. However, just as Haskell's \verb/Dimensional/, it is restricted to predefined units and does not allow the user to define her own units.
 
-Finally, there is \verb/ScalaQuantity/ \citep{Hans12}, which is closely modeled on Haskell's \verb/Dimensional/. Again, it does not allow user defined units and is otherwise so similar to \verb/Dimensional/ that I won't cover it in detail.
+Finally, there is \verb/ScalaQuantity/ \citep{Hans12}, which is closely modeled on Haskell's \verb/Dimensional/. Again, it does not allow user defined units and is otherwise so similar to \verb/Dimensional/ that I will not cover it in detail.
 
 Currently, there is no Units of Measure system in Scala that allows user defined units or provides for calculations without runtime overhead. This inspired me to create my own library, which is covered in the following.
 
@@ -410,11 +410,11 @@ Before my implementation is described in detail, a short list of its limitations
 The implementation of my Units of Measure system rests on a few cornerstones that are presented here. Without those, this system would not be possible, at least not without sacrificing a few of its goals. Some of those features (like Type Macros) are still very experimental and only available in nightly builds of Scala 2.11. Therefore, my library does not work with the current stable version of Scala (2.10 at the of writing). Luckily, it is very easy to use Scala 2.11 even now - builds are provided over a Sonatype repository and can be used with a simple sbt include (sbt is the de facto standard build system for Scala).
 
 \section{Design Principles}
-First of all, for a Units of Measure system it is necessary to store the unit information for each number in some way. The easiest and most natural way is to turn the number into an object and include the unit information as a field, but this incurs additional overhead. To avoid this, unit information is stored in type parameters in my system - they don't need any space at runtime, since on the JVM they are eliminated by erasure. Unit expressions are represented as a simple linked list of types, a single node consisting of a primitive unit and its exponent.
+First of all, for a Units of Measure system it is necessary to store the unit information for each number in some way. The easiest and most natural way is to turn the number into an object and include the unit information as a field, but this incurs additional overhead. To avoid this, unit information is stored in type parameters in my system - they do not need any space at runtime, since on the JVM they are eliminated by erasure. Unit expressions are represented as a simple linked list of types, a single node consisting of a primitive unit and its exponent.
 
 However, normally operations on type parameters are cumbersome and make it difficult to use and implement a full unit system. Fortunately, with the introduction of macros in Scala 2.10, it is possible to perform arbitrary transformations on type parameters, and source code in general. For details on how macros work in Scala, see Section \ref{sec:macros}.
 
-There is still one last problem: Arithmetic performance on boxed types is abysmal, and raw primitives can't have type arguments. Again, Scala 2.10 introduces a solution to this problem: Value classes. \ref{sec:value_classes}
+There is still one last problem: Arithmetic performance on boxed types is abysmal, and raw primitives cannot have type arguments. Again, Scala 2.10 introduces a solution to this problem: Value classes. \ref{sec:value_classes}
 
 To wrap up, full example of a Measure can be seen in Figure \ref{code:scala_measure}. As an additional optimization, I created separate implementations for the primitive types \verb|int|, \verb|long|, \verb|float| and \verb|double| in addition to the generic implementation for all types that are instances of \verb|Numeric|.
 
@@ -433,7 +433,7 @@ val u = new MeasureInt[CUnit[SUnit[Meter,  Pos1],
 
 Macros are what make a lot of the features of my Units of Measure system even possible in the first place. Fundamentally, macros in Scala are nothing more than normal functions that are executed by the compiler. Any arguments will be passed as abstract syntax trees (AST), and the result of the macro (another AST) is used in place of the original macro call. Those ASTs are the same data structures used by the compiler internally, and access to more specific APIs is possible using a special \verb|Context| object. The most relevant features are covered here, for a full documentation please refer to \citep{Eugene13}.
 
-For an example of a simple macro see Figure \ref{code:scala_macro} - macros in Scala don't use any special syntax, expect for the \verb|macro| keyword that tells the compiler that the current function is really a macro.
+For an example of a simple macro see Figure \ref{code:scala_macro} - macros in Scala do not use any special syntax, expect for the \verb|macro| keyword that tells the compiler that the current function is really a macro.
 
 
 
@@ -497,17 +497,17 @@ Construction of ASTs by hand is often very cumbersome. Luckily, there is a solut
 \section{Value Classes}
 \label{sec:value_classes}
 
-On the Java Virtual Machine (JVM), optimal arithmetic performance is only possible with primitive data types. Their downside is that they can't store any additional information, not even at compile time, since they don't accept type parameters.
+On the Java Virtual Machine (JVM), optimal arithmetic performance is only possible with primitive data types. Their downside is that they cannot store any additional information, not even at compile time, since they do not accept type parameters.
 Scala's value classes offer a solution to this problem: Value classes are a compile time wrapper around other types - similar to Haskell's \verb|newtype|. They also share the same limitations - a value class can only have a single field, type information is not available at runtime, etc.
 
-Luckily, that's all that's needed for a Units of Measure system - unit information is available at compile time in the form of type parameters, and at runtime, performance is equal to normal primitives.
+Luckily, that is all that is necessary for a Units of Measure system - unit information is available at compile time in the form of type parameters, and at runtime, performance is equal to normal primitives.
 
 
 \section{Parser Combinators}
 
 Parser Combinators make it very easy to write parsers for custom Domain Specific Languages (DSLs). For the Units of Measure library it is necessary to parse unit expressions similar to \verb|m / s^2|, as well as some internal parsing of type parameters. As their name implies, parser combinators are built from parsers (constant strings, regular expressions) that are combined with special combinators: repetition and alternatives. \citep{Spiewak09}
 
-Such a parser is very close to the EBNF of the grammar it's supposed to parsed, allowing for an intuitive understanding of its purpose. For a short sample, see Figure \ref{code:scala_parse}
+Such a parser is very close to the EBNF of the grammar it is supposed to parsed, allowing for an intuitive understanding of its purpose. For a short sample, see Figure \ref{code:scala_parse}
 
 \begin{figure}
 \begin{minted}{scala}
@@ -535,9 +535,9 @@ Usage of the Units of Measure system is straightforward - for convenience, norma
 
 
 \section{Defining Units}
-A useful Units of Measure systems needs two different kinds of units. First, fundamental units that don't depend on any other units and are fully defined on their own. These include the SI base units and other units the user creates that don't depend on other units. And second, derived units that include a conversion factor from one or more base units. Those are of course the SI derived units - Newton, degree Celsius, Volt, etc. - and other user-created derived units.
+A useful Units of Measure systems needs two different kinds of units. First, fundamental units that do not depend on any other units and are fully defined on their own. These include the SI base units and other units the user creates that do not depend on other units. And second, derived units that include a conversion factor from one or more base units. Those are of course the SI derived units - Newton, degree Celsius, Volt, etc. - and other user-created derived units.
 
-Both kinds of units are defined as new types, derived from a special helper macro (\verb|NewUnit|). This helper macro takes care of introducing appropriate helper classes to store information about unit name abbreviations (eg. \verb|m| for \verb|Meter|) and conversion factors for derived units. It resolves to an empty base class, adding no additional members to the class of the just defined unit. For an example of unit definitions, refer to Figure \ref{code:scala_define_units}. Note that units don't necessarily need to be defined as traits, a normal class will also work just fine - it's all about creating a new visible type name.
+Both kinds of units are defined as new types, derived from a special helper macro (\verb|NewUnit|). This helper macro takes care of introducing appropriate helper classes to store information about unit name abbreviations (eg. \verb|m| for \verb|Meter|) and conversion factors for derived units. It resolves to an empty base class, adding no additional members to the class of the just defined unit. For an example of unit definitions, refer to Figure \ref{code:scala_define_units}. Note that units do not necessarily need to be defined as traits, a normal class will also work just fine - it is all about creating a new visible type name.
 
 \begin{figure}
 \begin{minted}{scala}
@@ -562,7 +562,7 @@ trait Fahrenheit extends NewUnit("F", (5.0/9.0, "C"), -32.0)
 \label{sec:measure_creation}
 Creating Measures is easy thanks to a helper macro, \verb|u(value, unit)| that automatically generates the type parameters for the Measure class from a unit expression specified by the user. This unit expression allows for the usual arithmetic operators, including \verb|*| or a space for multiplication, \verb|/| for division and \verb|^| for exponentiation. For a sample of a few unit definitions, see Figure \ref{code:scala_create_measure}.
 
-The same macro can also be used to generate type signatures by simple omitting the value parameter. This is useful for function signatures, where type inference can't be used.
+The same macro can also be used to generate type signatures by simple omitting the value parameter. This is useful for function signatures, where type inference cannot be used.
 
 \begin{figure}
 \begin{minted}{scala}
@@ -604,7 +604,7 @@ val c = b.asType(n => new BigDecimal(n))
 
 \section{Using optimized Measures}
 
-To increase performance, specialized versions of the normal Measure class (which takes any object that is an instance of Numeric) exist for four primitive types: \verb|int|, \verb|long|, \verb|float| and \verb|double|. These don't suffer from the overhead for generics the normal class has to be, resulting in slightly faster (~40\%) performance.
+To increase performance, specialized versions of the normal Measure class (which takes any object that is an instance of Numeric) exist for four primitive types: \verb|int|, \verb|long|, \verb|float| and \verb|double|. These do not suffer from the overhead for generics the normal class has to be, resulting in slightly faster (~40\%) performance.
 
 The specialized Measure classes can be used with the macros introduced above, postfixed by a single letter to indicate which instance is desired: \verb|u_i| for \verb|int|, \verb|u_l| for \verb|long|, \verb|u_f| for \verb|float| and \verb|u_d| for \verb|double|. Of course, conversion between the different specializations is also possible with member functions: \verb|asInt|, \verb|asLong|, \verb|asFloat|, \verb|asDouble| and \verb|asType(conversionFunction)|.
 
