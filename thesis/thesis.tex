@@ -372,9 +372,9 @@ As we have seen, there are a few common features that almost all systems support
 \begin{description}
   \item[No Runtime Overhead] This is one of the most important goals - in many systems that profit from unit checking (games, embedded systems), computing power is at a premium during runtime, while processing at compile time is of little consequence. This also extends to memory consumption - Measures should need no more space than primitive numbers. In fact, they should be indistinguishable at runtime.
 
-  \item[Static Unit Checking] Any mistakes in the units of variables should be detected at compile time - there should not be any surprises at runtime! This is also closely related to the goal above. In fact, it is only possible to check units at compile time, as there is no unit information left at runtime. A simple way to achieve this - also the own I intend to use - is to offload the work of enforcing unit correctness onto the type system, by for example specifying the units as type parameters.
+  \item[Static Unit Checking] Any mistakes in the units of variables should be detected at compile time - there should not be any surprises at runtime! This is also closely related to the goal above. In fact, it is only possible to check units at compile time, as there is no unit information left at runtime. A simple way to achieve this - also the one used in the system presented in the following - is to offload the work of enforcing unit correctness onto the type system, by for example specifying the units as type parameters.
 
-  \item[Custom Units] While it is imperative to provide a thorough selection of units - the SI system at the very least -, it is simply impossible to collect and implement every possible unit. One Application might make heavy use from different types of currency, while another is solely concerned with physical temperatures. Therefore it should be possible for the user to define his own units, as well as to connect them to already existing units so that automatic conversion can take place.
+  \item[Custom Units] While it is imperative to provide a thorough selection of units - the SI system at the very least -, it is simply impossible to collect and implement every possible unit. One application might make heavy use of different types of currency, while another is solely concerned with physical temperatures. Therefore it should be possible for the user to define her own units, as well as to connect them to already existing units so that automatic conversion can take place.
 
   \item[Unit Conversion] To take full advantage of the provided units, helper methods should automatically convert numbers between different unit systems, as specified by the user. For example, \verb|u(10, "m/s").as("km/h")| automatically changes the units of the Measure and adjusts its value accordingly, to \verb/36/. Naturally, this relationship between units needs to be reflected in their definition, otherwise automatic conversions are impossible.
 
@@ -389,10 +389,10 @@ As we have seen, there are a few common features that almost all systems support
 \section{Limitations}
 \label{sec:limitiations}
 
-Before I describe my implementation in detail, I provide a short list of its limitations. Those are mostly based on limitations of the JVM itself, or on more fundamental issues.
+Before my implementation is described in detail, a short list of its limitations is shown here. Those are mostly based on limitations of the JVM itself, or on more fundamental issues and can therefore not be solved easily.
 
 \begin{description}
-  \item[Measure is not an instance of Numeric] While Measure requires its underlying type to be an instance of Numeric, it cannot be such an instance itself. The reason is simple: Multiplication will result in a Measure with a different type than the two operands (the units change), thus violating the type bounds of Numeric. The same can even happen for simple addition: Since all operations with a Measure canonicalize (reduce and sort) its type argument (representing its unit), it is possible that an addition of two Measures results in a Measure with a different type.
+  \item[Measure is not an instance of Numeric] While Measure (the class used to represent a number and its unit in my system) requires its underlying type to be an instance of Numeric, it cannot be such an instance itself. The reason is simple: Multiplication will result in a Measure with a different type than the two operands (the units change), thus violating the type bounds of Numeric. The same can even happen for simple addition: Since all operations with a Measure canonicalize (reduce and sort) its type argument (representing its unit), it is possible that an addition of two Measures results in a Measure with a different type.
 
   \item[Runtime equality ignores units] Since one fundamental goal was to incur no runtime overhead, it is obviously impossible to check unit equality at runtime. In fact, due to the nature of my implementation, Measures based on primitives are indistinguishable from those primitives at runtime - the wrapping Measure class only exists during compilation.
 
@@ -407,17 +407,16 @@ Before I describe my implementation in detail, I provide a short list of its lim
 
 \chapter{Implementation}
 
-The implementation of my Units of Measure system rests on a few cornerstones that I present here. Without those, this system would not be possible, at least not without sacrificing a few of its goals. Some of those features (like Type Macros) are still very experimental and only available in nightly builds of Scala 2.11. Therefore, my library does not work with the current stable version of Scala (2.10 at the of writing). Luckily, it is very easy to use Scala 2.11 even now - builds are provided over a Sonatype repository and can be used with a simple sbt include (sbt is the de facto standard build system for Scala).
+The implementation of my Units of Measure system rests on a few cornerstones that are presented here. Without those, this system would not be possible, at least not without sacrificing a few of its goals. Some of those features (like Type Macros) are still very experimental and only available in nightly builds of Scala 2.11. Therefore, my library does not work with the current stable version of Scala (2.10 at the of writing). Luckily, it is very easy to use Scala 2.11 even now - builds are provided over a Sonatype repository and can be used with a simple sbt include (sbt is the de facto standard build system for Scala).
 
 \section{Design Principles}
+First of all, for a Units of Measure system it is necessary to store the unit information for each number in some way. The easiest and most natural way is to turn the number into an object and include the unit information as a field, but this incurs additional overhead. To avoid this, unit information is stored in type parameters in my system - they don't need any space at runtime, since on the JVM they are eliminated by erasure. Unit expressions are represented as a simple linked list of types, a single node consisting of a primitive unit and its exponent.
 
-First of all, for a Units of Measure system it is necessary to store the unit information for each number somehow. The easiest and most natural way is to turn the number into an object and include the unit information as a field, but this incurs additional overhead. To avoid this, I store unit information in type parameters - they don't need any space at runtime, since on the JVM they are eliminated by erasure. Unit expressions are represented as a simple linked list, a single node consists of a primitive unit and its exponent.
-
-However, normally operations on those type parameters are cumbersome and make it difficult to use and implement a full unit system. Fortunately, with the introduction of macros in Scala 2.10, it is possible to perform arbitrary transformations on type parameters, and source code in general. For details on how macros work in Scala, see Section \ref{sec:macros}.
+However, normally operations on type parameters are cumbersome and make it difficult to use and implement a full unit system. Fortunately, with the introduction of macros in Scala 2.10, it is possible to perform arbitrary transformations on type parameters, and source code in general. For details on how macros work in Scala, see Section \ref{sec:macros}.
 
 There is still one last problem: Arithmetic performance on boxed types is abysmal, and raw primitives can't have type arguments. Again, Scala 2.10 introduces a solution to this problem: Value classes. \ref{sec:value_classes}
 
-To wrap up, you can see a full example of a Measure in Figure \ref{code:scala_measure}. As an additional optimization, I created separate implementations for the primitive types \verb|int|, \verb|long|, \verb|float| and \verb|double| in addition to the generic implementation for all types that are instances of \verb|Numeric|.
+To wrap up, full example of a Measure can be seen in Figure \ref{code:scala_measure}. As an additional optimization, I created separate implementations for the primitive types \verb|int|, \verb|long|, \verb|float| and \verb|double| in addition to the generic implementation for all types that are instances of \verb|Numeric|.
 
 \begin{figure}
 \begin{minted}{scala}
@@ -432,7 +431,7 @@ val u = new MeasureInt[CUnit[SUnit[Meter,  Pos1],
 \section{Macros in Scala}
 \label{sec:macros}
 
-Macros are what make a lot of the features of my Units of Measure system even possible in the first place. Fundamentally, macros in Scala are nothing more than normal functions that are executed by the compiler. Any arguments will be passed as abstract syntax trees (AST), and the result of the macro (another AST) is used in place of the original macro call. Those ASTs are the same data structures used by the compiler internally, and access to more specific APIs is possible using a special \verb|Context| object. I will cover the most relevant features here, for a full documentation please refer to \citep{Eugene13}.
+Macros are what make a lot of the features of my Units of Measure system even possible in the first place. Fundamentally, macros in Scala are nothing more than normal functions that are executed by the compiler. Any arguments will be passed as abstract syntax trees (AST), and the result of the macro (another AST) is used in place of the original macro call. Those ASTs are the same data structures used by the compiler internally, and access to more specific APIs is possible using a special \verb|Context| object. The most relevant features are covered here, for a full documentation please refer to \citep{Eugene13}.
 
 For an example of a simple macro see Figure \ref{code:scala_macro} - macros in Scala don't use any special syntax, expect for the \verb|macro| keyword that tells the compiler that the current function is really a macro.
 
@@ -460,12 +459,12 @@ def u_int_impl(c: Context)
 
 \subsection{Context and the Universe}
 
-As mentioned above, the compiler API is exposed to the programmer using a special object, \verb|scala.reflect.macros.Context|, that every macro needs to accept as a parameter. As an example, the \verb|c: Context| object can be used to introduce new top-level classes (\verb|c.introduceTopLevel(packageName, classTree)|), raise compiler errors (\verb|c.abort(c.enclosingPosition, "error here")|) or search for already existing classes (\verb|c.mirror.staticClass(className)|). I use this API heavily to introduce new classes to store bookkeeping information about units, as well as to provide concise messages in case of errors.
+As mentioned above, the compiler API is exposed to the programmer using a special object, \verb|scala.reflect.macros.Context|, that every macro needs to accept as a parameter. As an example, the \verb|c: Context| object can be used to introduce new top-level classes (\verb|c.introduceTopLevel(packageName, classTree)|), raise compiler errors (\verb|c.abort(c.enclosingPosition, "error here")|) or search for already existing classes (\verb|c.mirror.staticClass(className)|). In my Units of Measure system, this API is used heavily to introduce new classes to store bookkeeping information about units, as well as to provide concise messages in case of unit errors.
 
-Additionally, this includes the reflection API as a subpart, accessible via \verb|c.universe|. This API makes building (case classes) and deconstructing (via pattern matching) ASTs very easy.
+Additionally, this general API includes the reflection API as a subpart, accessible via \verb|c.universe|. This API makes building (case classes) and deconstructing ASTs (via pattern matching) very easy.
+
 
 \subsection{Type Macros}
-
 Often, simple macro functions are not enough, especially to use macros in unorthodox positions. In my case, a helper macro for type definitions is necessary to make use of my library viable. In practice, type macros are very similar to normal macros - there are only two major differences: The macro stub is declared as a new type with \verb|type| instead of a new function with \verb|def|, and it returns a \verb|c.Tree| instead of a \verb|c.Expr|. For a short sample taken from my project see Figure \ref{code:scala_macro}.
 
 Such type macros can be used anywhere a normal type can be used and can perform arbitrary calculations (including reading database schemata from disk or a remote server!).
@@ -486,8 +485,9 @@ def u_unit_int_impl(c: Context)(unitEx: c.Expr[String]): c.Tree = {
 \label{code:scala_typemacro}
 \end{figure}
 
-\subsection{Quasiquotes}
 
+
+\subsection{Quasiquotes}
 Construction of ASTs by hand is often very cumbersome. Luckily, there is a solution in the form of quasiquotes. They allow the user to write ASTs with normal Scala syntax, without knowing the internal data types used by the compiler. They also support substitution with \verb|$|, allowing for very concise Tree creation:
 
 \verb|q"@macroimpl.LongName(n = $longName) class $classNameShort"|
@@ -497,15 +497,15 @@ Construction of ASTs by hand is often very cumbersome. Luckily, there is a solut
 \section{Value Classes}
 \label{sec:value_classes}
 
-On the Java Virtual Machine (JVM), optimal arithmetic performance is only possible with primitive data types. The downside is that they can't store any additional information, not even at compile time, since they don't accept type parameters.
-Scala's value classes offer a solution to this problem. Value classes are a compile time wrapper around other types - similar to Haskell's \verb|newtype|. They also share the same limitations - a value class can only have a single field, type information is not available at runtime, etc.
+On the Java Virtual Machine (JVM), optimal arithmetic performance is only possible with primitive data types. Their downside is that they can't store any additional information, not even at compile time, since they don't accept type parameters.
+Scala's value classes offer a solution to this problem: Value classes are a compile time wrapper around other types - similar to Haskell's \verb|newtype|. They also share the same limitations - a value class can only have a single field, type information is not available at runtime, etc.
 
 Luckily, that's all that's needed for a Units of Measure system - unit information is available at compile time in the form of type parameters, and at runtime, performance is equal to normal primitives.
 
 
 \section{Parser Combinators}
 
-Parser Combinators make it very easy to write parsers for custom Domain Specific Languages (DSLs). For the Units of Measure library it was necessary to parse unit expressions similar to \verb|m / s^2|, as well as some internal parsing of type parameters. As their name implies, parser combinators are build from parsers (constant strings, regular expressions) that are combined with special combinators: repetition and alternatives. \citep{Spiewak09}
+Parser Combinators make it very easy to write parsers for custom Domain Specific Languages (DSLs). For the Units of Measure library it is necessary to parse unit expressions similar to \verb|m / s^2|, as well as some internal parsing of type parameters. As their name implies, parser combinators are built from parsers (constant strings, regular expressions) that are combined with special combinators: repetition and alternatives. \citep{Spiewak09}
 
 Such a parser is very close to the EBNF of the grammar it's supposed to parsed, allowing for an intuitive understanding of its purpose. For a short sample, see Figure \ref{code:scala_parse}
 
@@ -526,13 +526,16 @@ lazy val shortFactor: PackratParser[List[GeneralUnit]] = (
 \label{code:scala_parse}
 \end{figure}
 
-\chapter{Usage}
 
-Usage of the Units of Measure system is straight forward - for convenience, normal arithmetic operators are overloaded and Measures can be used just like normal numbers. Still, a few topics - units creation or conversions for example - warrant special attention, so they will be covered in the following.
+
+
+
+\chapter{Usage}
+Usage of the Units of Measure system is straightforward - for convenience, normal arithmetic operators are overloaded and Measures can be used just like normal numbers. Still, a few topics - units creation or conversions for example - warrant special attention, so they will be covered in the following.
+
 
 \section{Defining Units}
-
-A useful Units of Measure systems needs two different kinds of units. First, fundamental units that don't depend on any other units and are fully defined on their own. These include the SI base units and other units the user creates that don't depend on other units. And second, derived units that include a conversion factor from one or more base units. Those are of course the SI derived units - Newton, degree Celsius, Volt, etc. - and other user created derived units.
+A useful Units of Measure systems needs two different kinds of units. First, fundamental units that don't depend on any other units and are fully defined on their own. These include the SI base units and other units the user creates that don't depend on other units. And second, derived units that include a conversion factor from one or more base units. Those are of course the SI derived units - Newton, degree Celsius, Volt, etc. - and other user-created derived units.
 
 Both kinds of units are defined as new types, derived from a special helper macro (\verb|NewUnit|). This helper macro takes care of introducing appropriate helper classes to store information about unit name abbreviations (eg. \verb|m| for \verb|Meter|) and conversion factors for derived units. It resolves to an empty base class, adding no additional members to the class of the just defined unit. For an example of unit definitions, refer to Figure \ref{code:scala_define_units}. Note that units don't necessarily need to be defined as traits, a normal class will also work just fine - it's all about creating a new visible type name.
 
@@ -553,10 +556,11 @@ trait Fahrenheit extends NewUnit("F", (5.0/9.0, "C"), -32.0)
 \label{code:scala_define_units}
 \end{figure}
 
+
+
 \section{Creating Measures}
 \label{sec:measure_creation}
-
-Creating Measures is easy thanks to a helper macro, \verb|u(value, unit)| that automatically generates the type parameters for the Measure class form a unit expression specified by the user. This unit expression allows for the usual arithmetic operators, including \verb|*| and space for multiplication, \verb|/| for division and \verb|^| for exponentiation. For a sample of a few unit definitions, see Figure \ref{code:scala_create_measure}.
+Creating Measures is easy thanks to a helper macro, \verb|u(value, unit)| that automatically generates the type parameters for the Measure class from a unit expression specified by the user. This unit expression allows for the usual arithmetic operators, including \verb|*| or a space for multiplication, \verb|/| for division and \verb|^| for exponentiation. For a sample of a few unit definitions, see Figure \ref{code:scala_create_measure}.
 
 The same macro can also be used to generate type signatures by simple omitting the value parameter. This is useful for function signatures, where type inference can't be used.
 
@@ -600,7 +604,7 @@ val c = b.asType(n => new BigDecimal(n))
 
 \section{Using optimized Measures}
 
-To increase performance, specialized versions of the normal Measure class (which takes any object that is an instance of Numeric)  exist for four primitive types: \verb|int|, \verb|long|, \verb|float| and \verb|double|. These don't suffer from the overhead for generics the normal class has to be, resulting in slightly faster (~40\%) performance.
+To increase performance, specialized versions of the normal Measure class (which takes any object that is an instance of Numeric) exist for four primitive types: \verb|int|, \verb|long|, \verb|float| and \verb|double|. These don't suffer from the overhead for generics the normal class has to be, resulting in slightly faster (~40\%) performance.
 
 The specialized Measure classes can be used with the macros introduced above, postfixed by a single letter to indicate which instance is desired: \verb|u_i| for \verb|int|, \verb|u_l| for \verb|long|, \verb|u_f| for \verb|float| and \verb|u_d| for \verb|double|. Of course, conversion between the different specializations is also possible with member functions: \verb|asInt|, \verb|asLong|, \verb|asFloat|, \verb|asDouble| and \verb|asType(conversionFunction)|.
 
@@ -634,9 +638,9 @@ dot product   & [12.41, 13.04]  & [12.73, 13.20]  &  [15.14, 15.40] &  [15.19, 1
 \end{figure}
 
 
-To make sure my implementation actually achieves the raw performance I am aiming for, I wrote a simple benchmark suite to compare primitive data types against my own Measures. The benchmark tests two simple operations, vector addition and dot product. Vectors were not array backed, but rather had four hardcoded elements. To ensure optimal performance, I created separate implementations for each data type that was tested - unrestricted generics lead to boxing, which would hide any performance impact of the Measures. Still, in Scala generics are translated without boxing if a restrictive type bound permits it. I utilize this to create Vectors that can take a Measure of any unit (read: with any type parameter), as long as it is based on a certain type (this works since Measures are reduced to primitive types by the compiler).
+To make sure my implementation actually achieves the raw performance I am aiming for, I wrote a simple benchmark suite to compare primitive data types against my own Measures. The benchmark tests two simple operations, vector addition and dot product. Vectors are not array backed, but rather have four hard-coded elements. To ensure optimal performance, separate implementations for each data type that was tested were created - unrestricted generics lead to boxing, which would hide any performance impact of the Measures. Still, in Scala generics are translated without boxing if a restrictive type bound permits it. This is utilized to create Vectors that can take a Measure of any unit (read: with any type parameter), as long as it is based on a certain type (this works since Measures are reduced to primitive types by the compiler).
 
-These generic Vectors of Measures actually necessitated a trick mentioned in chapter \ref{cha:future}. Since the Measure macros for arithmetic can by default only see the name of the type parameter when they are used in a generic method, it is necessary to implement the methods of the Vector as macros themselves. For details please refer to chapter \ref{cha:future}; you can see the implementation in Figure \ref{code:scala_generic}.
+These generic Vectors of Measures actually necessitate a trick mentioned in chapter \ref{cha:future}. Since the Measure macros for arithmetic can by default only see the name of the type parameter when they are used in a generic method, it is necessary to implement the methods of the Vector as macros themselves. For details please refer to chapter \ref{cha:future}; you can see the implementation in Figure \ref{code:scala_generic}.
 
 \section{Method}
 To lessen the impact of overhead costs and concentrate on the performance of the arithmetic operations, all benchmarks are run on an array of 2 million vectors. A single run of a benchmark consists of 20 runs through such an array, with 5 untimed runs to warm-up the JIT. Finally, to calculate the median runtime for each operation as well as a confidence interval ($\alpha = 0.05$) for the expected runtime, 30 runs are performed for each implementation. The results are tallied up in Scala, and boxplots are created with matplotlib in Python.
@@ -662,7 +666,7 @@ As can be seen in tables \ref{bench:scala_measures_median} and \ref{bench:scala_
 \chapter{Future Work}
 \label{cha:future}
 
-Two problems remain to be solved that would surpass the scope of this project and are therefore only described here, without offering a full solution. Nevertheless they should be kept in mind when using this Units of Measure library to avoid any potential problems.
+Two problems remain to be solved that surpass the scope of this project and are therefore only described here, without offering a full solution. Nevertheless they should be kept in mind when using this Units of Measure library to avoid any potential problems.
 
 \section{Generics}
 
@@ -706,6 +710,12 @@ object VectorImpl {
 \section{Value Classes}
 Second, as mentioned in Section \ref{sec:limitiations}, Value classes currently experience degraded performance if used in arrays. This might be fixed in the next version of Scala, offering increased performance with a simple recompilation. Otherwise, a custom array wrapper that stores value classes as raw primitives by manually unwrapping them could solve this problem too. Even without a workaround, this problem is not too serious: performance only drops by about 40\% compared to raw primitives.
 
+
+\chapter{Conclusion}
+
+In this thesis, I have presented a general Units of Measure system for the Scala programming language that is as close to optimal in performance as currently possible. I expect that future advances in Scala and its Macro system will allow the library to become more efficient and easier to use, especially in respect to generics and arrays.
+
+Nevertheless, it is the first system of its kind for Scala, hopefully both providing an instructive guide on how to use Macros in Scala as well as providing a useful resource in creating even safer programs.
 
 \singlespacing
 \bibliographystyle{dinat}
